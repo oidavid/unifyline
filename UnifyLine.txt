@@ -1,0 +1,35 @@
+UnifyLine
+Linode
+unifyline-freeswitch-01
+W7iBZv8SFdteB78
+Unify2026
+
+ssh root@198.58.114.103
+ssh -t emax1@lish-us-central.linode.com unifyline-freeswitch-01
+
+https://intelsys.signalwire.com/credentials
+PTa95d3a08fe05e3084ec25d579f3b8125b3a9a9e96826f381
+
+198.58.114.103
+
+
+Supabase Unifyline
+https://supabase.com/dashboard/new/cbjglsmfiafwakvmayln
+monuwyujfVjsFgtQ
+
+Project URL: https://octnxbanudhyxbedtbqh.supabase.co
+
+Anon/Public key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jdG54YmFudWRoeXhiZWR0YnFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODkyMTQsImV4cCI6MjA5NTU2NTIxNH0.gVbcB-4KzxEqHHBFVkTBbSXe1yLYWeb_uNVH0gDV-G4
+
+
+
+Service_Role key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jdG54YmFudWRoeXhiZWR0YnFoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTk4OTIxNCwiZXhwIjoyMDk1NTY1MjE0fQ.NkqyPI_q5DKYRkS-ybpvOeI_Ns9AIvWHpe-ZY7vAHFo
+
+sb_publishable_TniexiKs6KoykXX5xi7VJQ_xrCXsGRk
+
+postgresql://postgres:[YOUR-PASSWORD]@db.octnxbanudhyxbedtbqh.supabase.co:5432/postgres
+
+supabase login
+supabase init
+supabase link --project-ref octnxbanudhyxbedtbqh
+

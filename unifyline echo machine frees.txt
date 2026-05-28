@@ -1,0 +1,14 @@
+root@localhost:~# echo "machine freeswitch.org login signalwire password PTa95d3a08fe05e3084ec25d579f3b812............" > /etc/apt/auth.conf
+root@localhost:~# root
+Command 'root' not found, but can be installed with:
+snap install root-framework
+root@localhost:~# echo "machine freeswitch.org login signalwire password PTa95d3a08fe05e3084ec25d579f3b8125b3a9a9e96826f381" > /etc/apt/auth.conf
+root@localhost:~# wget --http-user=signalwire --http-password=PTa95d3a08fe05e3084ec2................ -O /usr/share/keyrings/signalwire-freeswitch-repo.gpg https://freeswitch.org/repo/deb/debian-release/signalwire-freeswitch-repo.gpg
+--2026-05-26 16:02:48--  https://freeswitch.org/repo/deb/debian-release/signalwire-freeswitch-repo.gpg
+Resolving freeswitch.org (freeswitch.org)... 2803:d000:fffe::172, 190.102.98.172
+Connecting to freeswitch.org (freeswitch.org)|2803:d000:fffe::172|:443... connected.
+HTTP request sent, awaiting response... 404 Not Found
+Could not parse String-Transport-Security header
+2026-05-26 16:02:49 ERROR 404: Not Found.
+
+root@localhost:~#
