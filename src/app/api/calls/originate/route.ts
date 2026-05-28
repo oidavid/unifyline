@@ -9,17 +9,6 @@ export async function POST(req: NextRequest) {
 
     const { destination, callerId } = await req.json()
 
-    const freeswitchHost = process.env.FREESWITCH_HOST
-    const freeswitchPassword = process.env.FREESWITCH_PASSWORD
-
-    const command = originate {origination_caller_id_number=}sofia/gateway/sysmaster/ &echo
-
-    const response = await fetch(http://:8080/api/originate, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ command, password: freeswitchPassword }),
-    })
-
     await supabase.from('call_detail_records').insert({
       account_id: user.id,
       direction: 'outbound',
@@ -28,7 +17,7 @@ export async function POST(req: NextRequest) {
       status: 'initiated',
     })
 
-    return NextResponse.json({ success: true, destination })
+    return NextResponse.json({ success: true, destination, message: 'Call logged. Connect via Zoiper to complete.' })
   } catch (error) {
     return NextResponse.json({ error: 'Call failed' }, { status: 500 })
   }

@@ -12,6 +12,9 @@ PTa95d3a08fe05e3084ec25d579f3b8125b3a9a9e96826f381
 
 198.58.114.103
 
+console.anthropic.com
+Anthropic API Key for UnifyLine
+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
 
 Supabase Unifyline
 https://supabase.com/dashboard/new/cbjglsmfiafwakvmayln
