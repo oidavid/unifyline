@@ -7,12 +7,7 @@ export default function Dialpad() {
   const [calling, setCalling] = useState(false)
   const [status, setStatus] = useState('')
 
-  const keys = [
-    ['1', '2', '3'],
-    ['4', '5', '6'],
-    ['7', '8', '9'],
-    ['*', '0', '#'],
-  ]
+  const keys = ['1','2','3','4','5','6','7','8','9','*','0','#']
 
   function pressKey(key: string) {
     setNumber(n => n + key)
@@ -30,14 +25,11 @@ export default function Dialpad() {
       const res = await fetch('/api/calls/originate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          destination: number,
-          callerId: '16789235637',
-        }),
+        body: JSON.stringify({ destination: number, callerId: '16789235637' }),
       })
       const data = await res.json()
       if (data.success) {
-        setStatus(Calling ...)
+        setStatus('Call initiated to ' + number)
       } else {
         setStatus('Call failed. Please try again.')
       }
@@ -53,7 +45,7 @@ export default function Dialpad() {
       <h3 className="font-semibold text-gray-900 mb-4 text-center">Make a Call</h3>
       <div className="bg-gray-50 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
         <span className="text-xl font-mono text-gray-800 tracking-wider">
-          {number || <span className="text-gray-300">Enter number</span>}
+          {number || 'Enter number'}
         </span>
         {number && (
           <button onClick={deleteKey} className="text-gray-400 hover:text-gray-600">
@@ -62,7 +54,7 @@ export default function Dialpad() {
         )}
       </div>
       <div className="grid grid-cols-3 gap-2 mb-4">
-        {keys.flat().map(key => (
+        {keys.map(key => (
           <button
             key={key}
             onClick={() => pressKey(key)}
