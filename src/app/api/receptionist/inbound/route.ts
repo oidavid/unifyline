@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       success: true,
       call_uuid,
       greeting_text: config.greeting_text,
-      greeting_audio_b64: greetingAudio.toString('base64'),
+      greeting_audio_b64: Buffer.from(greetingAudio).toString('base64'),
       session_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/receptionist/respond`,
     })
   } catch (error) {
