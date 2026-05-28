@@ -16,3 +16,6 @@ out
 # OS
 .DS_Store
 Thumbs.db
+
+@.txt
+UnifyLine.txt
