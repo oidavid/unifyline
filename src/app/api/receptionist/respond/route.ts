@@ -14,7 +14,7 @@ const conversations = new Map<string, ConversationMessage[]>()
 export async function POST(req: NextRequest) {
   try {
     const contentType = req.headers.get('content-type') || ''
-    let callUuid: string, callerNumber: string, audioBuffer: Buffer, action: string = 'speak'
+    let callUuid: string, callerNumber: string, audioData: Uint8Array, action: string = 'speak'
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData()
@@ -22,13 +22,13 @@ export async function POST(req: NextRequest) {
       callerNumber = formData.get('caller_id_number') as string || 'Unknown'
       action = formData.get('action') as string || 'speak'
       const audioFile = formData.get('audio') as File
-      audioBuffer = Buffer.from(await audioFile.arrayBuffer())
+      audioData = new Uint8Array(await audioFile.arrayBuffer())
     } else {
       const body = await req.json()
       callUuid = body.call_uuid
       callerNumber = body.caller_id_number || 'Unknown'
       action = body.action || 'speak'
-      audioBuffer = Buffer.from(body.audio_b64 || '', 'base64')
+      audioData = new Uint8Array(Buffer.from(body.audio_b64 || '', 'base64'))
     }
 
     if (action === 'end') {
@@ -42,13 +42,14 @@ export async function POST(req: NextRequest) {
     if (!conversations.has(callUuid)) conversations.set(callUuid, [])
     const conversation = conversations.get(callUuid)!
 
-    const transcript = await transcribeAudio(audioBuffer)
+    const transcript = await transcribeAudio(audioData)
     console.log(`[Receptionist] ${callUuid} | Caller: "${transcript}"`)
 
     if (!transcript.trim()) {
       const silenceResponse = "I'm sorry, I didn't catch that. Could you please repeat?"
       const audio = await textToSpeech(silenceResponse)
-      return NextResponse.json({ success: true, transcript: '', ai_response: silenceResponse, audio_b64: audio.toString('base64') })
+      const audioB64 = Buffer.from(audio).toString('base64')
+      return NextResponse.json({ success: true, transcript: '', ai_response: silenceResponse, audio_b64: audioB64 })
     }
 
     conversation.push({ role: 'user', content: transcript })
@@ -60,12 +61,13 @@ export async function POST(req: NextRequest) {
     conversation.push({ role: 'assistant', content: aiResponse })
 
     const responseAudio = await textToSpeech(aiResponse)
+    const audioB64 = Buffer.from(responseAudio).toString('base64')
 
     return NextResponse.json({
       success: true,
       transcript,
       ai_response: aiResponse,
-      audio_b64: responseAudio.toString('base64'),
+      audio_b64: audioB64,
     })
   } catch (error) {
     console.error('[Receptionist] Respond error:', error)
