@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Phone, LayoutDashboard, Users, LogOut, Mic } from 'lucide-react'
@@ -23,8 +23,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <aside className="w-64 bg-[#0C2C68] text-white flex flex-col">
-        <div className="p-6 border-b border-blue-800">
+      <aside className="w-64 bg-[#5B4A9B] text-white flex flex-col">
+        <div className="p-6 border-b border-purple-800">
           <h1 className="text-2xl font-bold">UnifyLine</h1>
           <p className="text-blue-300 text-xs mt-1">AI Communications Platform</p>
         </div>
@@ -35,7 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={href}
                 href={href}
-                className={active ? 'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-white text-[#0C2C68]' : 'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-blue-100 hover:bg-blue-800'}
+                className={active ? 'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-white text-[#5B4A9B]' : 'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-purple-100 hover:bg-purple-800'}
               >
                 <Icon size={18} />
                 {label}
@@ -43,8 +43,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )
           })}
         </nav>
-        <div className="p-4 border-t border-blue-800">
-          <button onClick={handleSignOut} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800 transition text-sm font-medium w-full">
+        <div className="p-4 border-t border-purple-800">
+          <button onClick={handleSignOut} className="flex items-center gap-3 px-4 py-3 rounded-lg text-purple-100 hover:bg-purple-800 transition text-sm font-medium w-full">
             <LogOut size={18} />
             Sign Out
           </button>
@@ -54,3 +54,4 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   )
 }
+

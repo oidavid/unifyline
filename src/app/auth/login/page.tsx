@@ -1,4 +1,4 @@
-ï»¿'use client'
+'use client'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -34,10 +34,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0C2C68] to-[#1A56C4] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#5B4A9B] to-[#7B6BBF] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#0C2C68]">UnifyLine</h1>
+          <h1 className="text-3xl font-bold text-[#5B4A9B]">UnifyLine</h1>
           <p className="text-gray-500 mt-1">AI-Powered Business Communications</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -47,7 +47,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C2C68]"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#5B4A9B]"
               placeholder="you@company.com"
               required
             />
@@ -58,8 +58,8 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#0C2C68]"
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#5B4A9B]"
+              placeholder="••••••••"
               required
             />
           </div>
@@ -69,7 +69,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#0C2C68] text-white py-3 rounded-lg font-semibold hover:bg-[#1A56C4] transition disabled:opacity-50"
+            className="w-full bg-[#5B4A9B] text-white py-3 rounded-lg font-semibold hover:bg-[#7B6BBF] transition disabled:opacity-50"
           >
             {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
           </button>
@@ -78,7 +78,7 @@ export default function LoginPage() {
           {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
           <button
             onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-            className="text-[#0C2C68] font-semibold hover:underline"
+            className="text-[#5B4A9B] font-semibold hover:underline"
           >
             {mode === 'login' ? 'Sign up' : 'Sign in'}
           </button>
@@ -87,3 +87,4 @@ export default function LoginPage() {
     </div>
   )
 }
+

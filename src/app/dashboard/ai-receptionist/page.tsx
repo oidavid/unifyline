@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { Mic, Save, RefreshCw } from 'lucide-react'
@@ -63,7 +63,7 @@ export default function AIReceptionistPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center gap-2 mb-4">
-            <Mic size={20} className="text-[#0C2C68]" />
+            <Mic size={20} className="text-[#5B4A9B]" />
             <h3 className="font-semibold text-gray-900">AI Greeting</h3>
           </div>
           <label className="block text-sm text-gray-600 mb-2">First thing the AI says when answering</label>
@@ -71,12 +71,12 @@ export default function AIReceptionistPage() {
             value={config.greeting_text}
             onChange={e => setConfig(c => ({ ...c, greeting_text: e.target.value }))}
             rows={3}
-            className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C2C68]"
+            className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#5B4A9B]"
           />
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center gap-2 mb-4">
-            <RefreshCw size={20} className="text-[#0C2C68]" />
+            <RefreshCw size={20} className="text-[#5B4A9B]" />
             <h3 className="font-semibold text-gray-900">AI Behavior</h3>
           </div>
           <label className="block text-sm text-gray-600 mb-2">System prompt</label>
@@ -84,7 +84,7 @@ export default function AIReceptionistPage() {
             value={config.system_prompt}
             onChange={e => setConfig(c => ({ ...c, system_prompt: e.target.value }))}
             rows={6}
-            className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C2C68]"
+            className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#5B4A9B]"
           />
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 lg:col-span-2">
@@ -95,7 +95,7 @@ export default function AIReceptionistPage() {
             onChange={e => setConfig(c => ({ ...c, knowledge_base: e.target.value }))}
             rows={8}
             placeholder="Business name: Acme Corp&#10;Hours: Monday-Friday 9am-6pm&#10;Services: ..."
-            className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C2C68]"
+            className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#5B4A9B]"
           />
         </div>
       </div>
@@ -103,7 +103,7 @@ export default function AIReceptionistPage() {
         <button
           onClick={handleSave}
           disabled={loading}
-          className="flex items-center gap-2 bg-[#0C2C68] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#1A56C4] transition disabled:opacity-50"
+          className="flex items-center gap-2 bg-[#5B4A9B] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#7B6BBF] transition disabled:opacity-50"
         >
           <Save size={18} />
           {saved ? 'Saved!' : loading ? 'Saving...' : 'Save Configuration'}
@@ -112,3 +112,4 @@ export default function AIReceptionistPage() {
     </div>
   )
 }
+
