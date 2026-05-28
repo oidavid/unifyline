@@ -62,7 +62,7 @@ IMPORTANT: You are speaking via phone. Keep all responses to 1-3 short sentences
   return textBlock ? textBlock.text : "I'm sorry, could you repeat that?"
 }
 
-export async function textToSpeech(text: string): Promise<Uint8Array> {
+export async function textToSpeech(text: string): Promise<ArrayBuffer> {
   const response = await fetch('https://api.deepgram.com/v1/speak?model=aura-2-en-us', {
     method: 'POST',
     headers: {
@@ -73,11 +73,10 @@ export async function textToSpeech(text: string): Promise<Uint8Array> {
   })
 
   if (!response.ok) throw new Error(`Deepgram TTS failed: ${response.statusText}`)
-  const arrayBuffer = await response.arrayBuffer()
-  return new Uint8Array(arrayBuffer)
+  return response.arrayBuffer()
 }
 
-export async function transcribeAudio(audioData: Uint8Array, mimeType: string = 'audio/wav'): Promise<string> {
+export async function transcribeAudio(audioBuffer: ArrayBuffer, mimeType: string = 'audio/wav'): Promise<string> {
   const response = await fetch(
     'https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&punctuate=true',
     {
@@ -86,7 +85,7 @@ export async function transcribeAudio(audioData: Uint8Array, mimeType: string = 
         'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
         'Content-Type': mimeType,
       },
-      body: audioData,
+      body: audioBuffer,
     }
   )
 
