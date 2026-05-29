@@ -63,7 +63,7 @@ IMPORTANT: You are speaking via phone. Keep all responses to 1-3 short sentences
 }
 
 export async function textToSpeech(text: string): Promise<ArrayBuffer> {
-  const response = await fetch('https://api.deepgram.com/v1/speak?model=aura-asteria-en', {
+  const response = await fetch('https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=linear16&sample_rate=8000&container=wav', {
     method: 'POST',
     headers: {
       'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
