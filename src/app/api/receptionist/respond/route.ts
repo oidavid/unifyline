@@ -9,33 +9,52 @@ import {
   ConversationMessage,
 } from '@/lib/receptionist'
 
+export const maxDuration = 60
+export const dynamic = 'force-dynamic'
+
 const conversations = new Map<string, ConversationMessage[]>()
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const { call_uuid, caller_id_number, action, audio_b64 } = body
-    const callerNumber = caller_id_number || 'Unknown'
+    const contentType = req.headers.get('content-type') || ''
+    let callUuid: string, callerNumber: string, action: string = 'speak'
+    let audioBuffer: ArrayBuffer | null = null
 
-    console.log(`[Receptionist] ${call_uuid} | action: ${action || 'speak'}`)
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData()
+      callUuid = formData.get('call_uuid') as string
+      callerNumber = formData.get('caller_id_number') as string || 'Unknown'
+      action = formData.get('action') as string || 'speak'
+      const audioFile = formData.get('audio') as File | null
+      if (audioFile && audioFile.size > 0) {
+        audioBuffer = await audioFile.arrayBuffer()
+        console.log(`[Receptionist] Received audio: ${audioFile.size} bytes`)
+      }
+    } else {
+      const body = await req.json()
+      callUuid = body.call_uuid
+      callerNumber = body.caller_id_number || 'Unknown'
+      action = body.action || 'speak'
+      if (body.audio_b64) {
+        audioBuffer = Buffer.from(body.audio_b64, 'base64').buffer as ArrayBuffer
+      }
+    }
 
-    // Handle call end
+    console.log(`[Receptionist] ${callUuid} | action: ${action} | audio: ${audioBuffer?.byteLength ?? 0} bytes`)
+
     if (action === 'end') {
-      const conversation = conversations.get(call_uuid) || []
+      const conversation = conversations.get(callUuid) || []
       const summary = await generateCallSummary(conversation)
-      await saveCallTranscript(call_uuid, '', callerNumber, conversation, summary)
-      conversations.delete(call_uuid)
+      await saveCallTranscript(callUuid, '', callerNumber, conversation, summary)
+      conversations.delete(callUuid)
       return NextResponse.json({ success: true, summary })
     }
 
-    // Get or init conversation
-    if (!conversations.has(call_uuid)) conversations.set(call_uuid, [])
-    const conversation = conversations.get(call_uuid)!
-
+    if (!conversations.has(callUuid)) conversations.set(callUuid, [])
+    const conversation = conversations.get(callUuid)!
     const config = await getActiveReceptionistConfig()
     if (!config) throw new Error('No config')
 
-    // Handle greeting (first turn)
     if (action === 'greet') {
       const audio = await textToSpeech(config.greeting_text)
       conversation.push({ role: 'assistant', content: config.greeting_text })
@@ -46,40 +65,45 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Handle silence
     if (action === 'silence') {
-      const silenceResponse = "I'm sorry, I didn't catch that. Could you please repeat?"
-      const audio = await textToSpeech(silenceResponse)
+      const msg = "I'm sorry, I didn't catch that. Could you please repeat?"
+      const audio = await textToSpeech(msg)
       return NextResponse.json({
         success: true,
-        ai_response: silenceResponse,
+        ai_response: msg,
         audio_b64: Buffer.from(audio).toString('base64'),
       })
     }
 
-    // Handle caller audio - transcribe and respond
-    if (!audio_b64) {
-      return NextResponse.json({ error: 'No audio provided' }, { status: 400 })
+    // Process caller audio
+    if (!audioBuffer || audioBuffer.byteLength < 1000) {
+      console.log(`[Receptionist] Audio too small: ${audioBuffer?.byteLength ?? 0} bytes`)
+      const msg = "I'm sorry, I didn't catch that. Could you please repeat?"
+      const audio = await textToSpeech(msg)
+      return NextResponse.json({
+        success: true,
+        ai_response: msg,
+        audio_b64: Buffer.from(audio).toString('base64'),
+      })
     }
 
-    const audioBuffer = Buffer.from(audio_b64, 'base64').buffer as ArrayBuffer
     const transcript = await transcribeAudio(audioBuffer)
-    console.log(`[Receptionist] ${call_uuid} | Caller: "${transcript}"`)
+    console.log(`[Receptionist] ${callUuid} | Transcript: "${transcript}"`)
 
     if (!transcript.trim()) {
-      const silenceResponse = "I'm sorry, I didn't catch that. Could you please repeat?"
-      const audio = await textToSpeech(silenceResponse)
+      const msg = "I'm sorry, I didn't catch that. Could you please repeat?"
+      const audio = await textToSpeech(msg)
       return NextResponse.json({
         success: true,
         transcript: '',
-        ai_response: silenceResponse,
+        ai_response: msg,
         audio_b64: Buffer.from(audio).toString('base64'),
       })
     }
 
     conversation.push({ role: 'user', content: transcript })
     const aiResponse = await generateAIResponse(conversation, config)
-    console.log(`[Receptionist] ${call_uuid} | AI: "${aiResponse}"`)
+    console.log(`[Receptionist] ${callUuid} | AI: "${aiResponse}"`)
     conversation.push({ role: 'assistant', content: aiResponse })
 
     const responseAudio = await textToSpeech(aiResponse)
@@ -91,9 +115,9 @@ export async function POST(req: NextRequest) {
       audio_b64: Buffer.from(responseAudio).toString('base64'),
     })
 
-  } catch (error) {
-    console.error('[Receptionist] Error:', error)
-    return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
+  } catch (error: any) {
+    console.error('[Receptionist] Error:', error?.message || error)
+    return NextResponse.json({ error: 'Processing failed', detail: error?.message }, { status: 500 })
   }
 }
 
