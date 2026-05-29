@@ -1,4 +1,4 @@
-﻿import Anthropic from '@anthropic-ai/sdk'
+import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
 
 const anthropic = new Anthropic({
@@ -63,7 +63,7 @@ IMPORTANT: You are speaking via phone. Keep all responses to 1-3 short sentences
 }
 
 export async function textToSpeech(text: string): Promise<ArrayBuffer> {
-  const response = await fetch('https://api.deepgram.com/v1/speak?model=aura-2-en-us', {
+  const response = await fetch('https://api.deepgram.com/v1/speak?model=aura-asteria-en', {
     method: 'POST',
     headers: {
       'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
