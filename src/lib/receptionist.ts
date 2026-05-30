@@ -78,12 +78,12 @@ export async function textToSpeech(text: string): Promise<ArrayBuffer> {
 
 export async function transcribeAudio(audioBuffer: ArrayBuffer, mimeType: string = 'audio/wav'): Promise<string> {
   const response = await fetch(
-    'https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&punctuate=true',
+    'https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&punctuate=true&encoding=linear16&sample_rate=8000&channels=1',
     {
       method: 'POST',
       headers: {
         'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
-        'Content-Type': mimeType,
+        'Content-Type': 'audio/wav',
       },
       body: audioBuffer,
     }
@@ -132,3 +132,4 @@ export async function generateCallSummary(conversation: ConversationMessage[]): 
   const textBlock = response.content.find(block => block.type === 'text')
   return textBlock ? textBlock.text : 'Call completed.'
 }
+
