@@ -1,14 +1,16 @@
-'use client'
+﻿'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Phone, LayoutDashboard, Users, LogOut, Mic } from 'lucide-react'
+import { Phone, LayoutDashboard, Users, LogOut, Mic, Video, CreditCard } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/calls', icon: Phone, label: 'Call Logs' },
   { href: '/dashboard/ai-receptionist', icon: Mic, label: 'AI Receptionist' },
+  { href: '/dashboard/conference', icon: Video, label: 'Conference' },
   { href: '/dashboard/contacts', icon: Users, label: 'Contacts' },
+  { href: '/dashboard/billing', icon: CreditCard, label: 'Billing' },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -23,8 +25,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <aside className="w-64 bg-[#5B4A9B] text-white flex flex-col">
-        <div className="p-6 border-b border-purple-800">
+      <aside className="w-64 bg-[#0C2C68] text-white flex flex-col">
+        <div className="p-6 border-b border-blue-800">
           <h1 className="text-2xl font-bold">UnifyLine</h1>
           <p className="text-blue-300 text-xs mt-1">AI Communications Platform</p>
         </div>
@@ -32,21 +34,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {navItems.map(({ href, icon: Icon, label }) => {
             const active = pathname === href
             return (
-              <Link
-                key={href}
-                href={href}
-                className={active ? 'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-white text-[#5B4A9B]' : 'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-purple-100 hover:bg-purple-800'}
-              >
-                <Icon size={18} />
-                {label}
+              <Link key={href} href={href}
+                className={active ? 'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-white text-[#0C2C68]' : 'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-blue-100 hover:bg-blue-800 transition'}>
+                <Icon size={18} />{label}
               </Link>
             )
           })}
         </nav>
-        <div className="p-4 border-t border-purple-800">
-          <button onClick={handleSignOut} className="flex items-center gap-3 px-4 py-3 rounded-lg text-purple-100 hover:bg-purple-800 transition text-sm font-medium w-full">
-            <LogOut size={18} />
-            Sign Out
+        <div className="p-4 border-t border-blue-800 space-y-2">
+          <div className="px-4 py-2">
+            <p className="text-blue-300 text-xs">Active DIDs</p>
+            <p className="text-white text-xs font-mono mt-1">404-592-5562</p>
+            <p className="text-white text-xs font-mono">678-460-5180</p>
+          </div>
+          <button onClick={handleSignOut} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800 transition text-sm font-medium w-full">
+            <LogOut size={18} />Sign Out
           </button>
         </div>
       </aside>
@@ -54,4 +56,3 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   )
 }
-
