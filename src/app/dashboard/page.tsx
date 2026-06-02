@@ -1,55 +1,54 @@
 ﻿import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
-import { Phone, PhoneIncoming, PhoneOutgoing, Clock } from 'lucide-react'
+import { Phone, PhoneIncoming, PhoneOutgoing, Clock, Mic, MessageSquare, TrendingUp } from 'lucide-react'
+import Link from 'next/link'
 
 export default async function DashboardPage() {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: cdrs } = await supabase
-    .from('call_detail_records')
-    .select('*')
-    .eq('account_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(5)
+  const { data: cdrs } = await supabase.from('call_detail_records').select('*').eq('account_id', user.id).order('created_at', { ascending: false }).limit(5)
+  const { count: totalCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', user.id)
+  const { count: inboundCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', user.id).eq('direction', 'inbound')
+  const { count: outboundCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', user.id).eq('direction', 'outbound')
+  const { data: aiConfig } = await supabase.from('ai_receptionist_config').select('active, greeting_text').eq('account_id', user.id).single()
+  const { data: allCdrs } = await supabase.from('call_detail_records').select('duration_sec').eq('account_id', user.id)
 
-  const { count: totalCalls } = await supabase
-    .from('call_detail_records')
-    .select('*', { count: 'exact', head: true })
-    .eq('account_id', user.id)
-
-  const { count: inboundCalls } = await supabase
-    .from('call_detail_records')
-    .select('*', { count: 'exact', head: true })
-    .eq('account_id', user.id)
-    .eq('direction', 'inbound')
-
-  const { count: outboundCalls } = await supabase
-    .from('call_detail_records')
-    .select('*', { count: 'exact', head: true })
-    .eq('account_id', user.id)
-    .eq('direction', 'outbound')
-
-  const stats = [
-    { label: 'Total Calls', value: totalCalls || 0, icon: Phone, color: 'bg-blue-500' },
-    { label: 'Inbound', value: inboundCalls || 0, icon: PhoneIncoming, color: 'bg-green-500' },
-    { label: 'Outbound', value: outboundCalls || 0, icon: PhoneOutgoing, color: 'bg-purple-500' },
-    { label: 'Avg Duration', value: '0:00', icon: Clock, color: 'bg-orange-500' },
-  ]
+  const avgDuration = allCdrs && allCdrs.length > 0 ? Math.round(allCdrs.reduce((a, c) => a + (c.duration_sec || 0), 0) / allCdrs.length) : 0
+  const formatDuration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  const aiCallsCount = cdrs?.filter(c => c.ai_summary).length || 0
+  const userEmail = user.email || ''
+  const userName = userEmail.split('@')[0]
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-        <p className="text-gray-500 mt-1">Welcome to UnifyLine</p>
+    <div className="p-8 max-w-7xl mx-auto">
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+          <p className="text-gray-500 mt-1">Welcome back, <span className="font-medium text-gray-700">{userName}</span></p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className="text-xs text-gray-400">Logged in as</p>
+            <p className="text-sm font-medium text-gray-700">{userEmail}</p>
+          </div>
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${aiConfig?.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+            <div className={`w-2 h-2 rounded-full ${aiConfig?.active ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+            AI {aiConfig?.active ? 'Active' : 'Inactive'}
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {stats.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-white rounded-xl shadow-sm p-6 flex items-center gap-4">
-            <div className={color + ' p-3 rounded-lg'}>
-              <Icon size={24} className="text-white" />
-            </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {[
+          { label: 'Total Calls', value: totalCalls || 0, icon: Phone, color: 'bg-blue-500' },
+          { label: 'Inbound', value: inboundCalls || 0, icon: PhoneIncoming, color: 'bg-green-500' },
+          { label: 'Outbound', value: outboundCalls || 0, icon: PhoneOutgoing, color: 'bg-purple-500' },
+          { label: 'Avg Duration', value: formatDuration(avgDuration), icon: Clock, color: 'bg-orange-500' },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="bg-white rounded-xl shadow-sm p-6 flex items-center gap-4 border border-gray-100">
+            <div className={`${color} p-3 rounded-xl`}><Icon size={22} className="text-white" /></div>
             <div>
               <p className="text-gray-500 text-sm">{label}</p>
               <p className="text-2xl font-bold text-gray-900">{value}</p>
@@ -57,39 +56,83 @@ export default async function DashboardPage() {
           </div>
         ))}
       </div>
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Calls</h3>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <h3 className="text-base font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <div className="space-y-3">
+            <Link href="/dashboard/ai-receptionist" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition border border-gray-100">
+              <div className="bg-[#0C2C68] p-2 rounded-lg"><Mic size={16} className="text-white" /></div>
+              <div><p className="text-sm font-medium text-gray-900">Configure AI Receptionist</p><p className="text-xs text-gray-500">Update greeting and behavior</p></div>
+            </Link>
+            <Link href="/dashboard/conference" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition border border-gray-100">
+              <div className="bg-purple-600 p-2 rounded-lg"><Phone size={16} className="text-white" /></div>
+              <div><p className="text-sm font-medium text-gray-900">Conference Bridge</p><p className="text-xs text-gray-500">Start or manage conference calls</p></div>
+            </Link>
+            <Link href="/dashboard/calls" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition border border-gray-100">
+              <div className="bg-green-600 p-2 rounded-lg"><MessageSquare size={16} className="text-white" /></div>
+              <div><p className="text-sm font-medium text-gray-900">View Call Summaries</p><p className="text-xs text-gray-500">AI-generated call insights</p></div>
+            </Link>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-[#0C2C68] to-[#1A56C4] rounded-xl shadow-sm p-6 text-white">
+          <div className="flex items-center gap-2 mb-4"><Mic size={20} /><h3 className="text-base font-semibold">AI Receptionist</h3></div>
+          <div className="space-y-3">
+            <div>
+              <p className="text-blue-200 text-xs uppercase tracking-wide mb-1">Current Greeting</p>
+              <p className="text-sm text-white leading-relaxed italic">&ldquo;{aiConfig?.greeting_text || 'Not configured yet'}&rdquo;</p>
+            </div>
+            <div className="pt-3 border-t border-blue-500">
+              <p className="text-blue-200 text-xs uppercase tracking-wide mb-1">Your DID Numbers</p>
+              <p className="text-sm font-mono text-white">(404) 592-5562</p>
+              <p className="text-sm font-mono text-white">(678) 460-5180</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div className="flex items-center gap-2 mb-4"><TrendingUp size={20} className="text-[#0C2C68]" /><h3 className="text-base font-semibold text-gray-900">AI Activity</h3></div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between"><span className="text-sm text-gray-600">Calls handled by AI</span><span className="text-sm font-bold text-gray-900">{inboundCalls || 0}</span></div>
+            <div className="flex items-center justify-between"><span className="text-sm text-gray-600">Calls with summaries</span><span className="text-sm font-bold text-gray-900">{aiCallsCount}</span></div>
+            <div className="flex items-center justify-between"><span className="text-sm text-gray-600">AI adoption rate</span><span className="text-sm font-bold text-green-600">{totalCalls ? Math.round((inboundCalls || 0) / totalCalls * 100) : 0}%</span></div>
+            <div className="pt-3 border-t border-gray-100"><p className="text-xs text-gray-400">Call 404-592-5562 to test your AI receptionist</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-gray-900">Recent Calls</h3>
+          <Link href="/dashboard/calls" className="text-sm text-[#0C2C68] hover:underline">View all</Link>
+        </div>
         {cdrs && cdrs.length > 0 ? (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500 border-b">
-                <th className="pb-3">Direction</th>
-                <th className="pb-3">From</th>
-                <th className="pb-3">To</th>
-                <th className="pb-3">Duration</th>
-                <th className="pb-3">Time</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {cdrs.map(cdr => (
-                <tr key={cdr.id}>
-                  <td className="py-3">
-                    <span className={cdr.direction === 'inbound' ? 'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700' : 'px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700'}>
-                      {cdr.direction}
-                    </span>
-                  </td>
-                  <td className="py-3 text-gray-700">{cdr.from_number}</td>
-                  <td className="py-3 text-gray-700">{cdr.to_number}</td>
-                  <td className="py-3 text-gray-700">{cdr.duration_sec}s</td>
-                  <td className="py-3 text-gray-500">{new Date(cdr.created_at).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="divide-y divide-gray-50">
+            {cdrs.map(cdr => (
+              <div key={cdr.id} className="p-5 hover:bg-gray-50 transition">
+                <div className="flex items-start gap-4">
+                  <div className={`p-2 rounded-lg mt-0.5 ${cdr.direction === 'inbound' ? 'bg-green-100' : 'bg-blue-100'}`}>
+                    {cdr.direction === 'inbound' ? <PhoneIncoming size={16} className="text-green-600" /> : <PhoneOutgoing size={16} className="text-blue-600" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="text-sm font-medium text-gray-900">{cdr.direction === 'inbound' ? cdr.from_number : cdr.to_number}</span>
+                      <span className="text-xs text-gray-400">{cdr.duration_sec}s</span>
+                      {cdr.ai_summary && <span className="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700 font-medium">AI Summary</span>}
+                    </div>
+                    {cdr.ai_summary && <p className="text-sm text-gray-600 leading-relaxed">{cdr.ai_summary}</p>}
+                  </div>
+                  <span className="text-xs text-gray-400 whitespace-nowrap">{new Date(cdr.created_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
-          <div className="text-center py-12 text-gray-400">
+          <div className="text-center py-16 text-gray-400">
             <Phone size={48} className="mx-auto mb-3 opacity-30" />
-            <p>No calls yet.</p>
+            <p className="font-medium">No calls yet</p>
+            <p className="text-sm mt-1">Call (404) 592-5562 to test your AI receptionist</p>
           </div>
         )}
       </div>
