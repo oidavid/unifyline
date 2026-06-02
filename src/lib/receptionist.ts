@@ -28,6 +28,12 @@ CRITICAL RULES:
   return data
 }
 
+export async function getDefaultAccountId(): Promise<string | null> {
+  // Get the first user account to associate inbound calls with
+  const { data } = await supabase.from('ai_receptionist_config').select('account_id').eq('active', true).limit(1).single()
+  return data?.account_id || null
+}
+
 export async function generateAIResponse(conversation: ConversationMessage[], config: ReceptionistConfig): Promise<string> {
   const systemPrompt = `${config.system_prompt}
 
@@ -66,12 +72,29 @@ export async function transcribeAudio(audioBuffer: ArrayBuffer): Promise<string>
   return data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || ''
 }
 
-export async function saveCallTranscript(callUuid: string, accountId: string, callerNumber: string, conversation: ConversationMessage[], summary: string) {
+export async function saveCallTranscript(
+  callUuid: string,
+  accountId: string,
+  callerNumber: string,
+  conversation: ConversationMessage[],
+  summary: string
+) {
+  // If no accountId provided, get the default active account
+  let finalAccountId = accountId
+  if (!finalAccountId) {
+    finalAccountId = await getDefaultAccountId() || ''
+  }
+  
   await supabase.from('call_detail_records').upsert({
-    call_uuid: callUuid, account_id: accountId, direction: 'inbound',
-    from_number: callerNumber, to_number: 'AI Receptionist', status: 'completed',
+    call_uuid: callUuid,
+    account_id: finalAccountId,
+    direction: 'inbound',
+    from_number: callerNumber,
+    to_number: 'AI Receptionist',
+    status: 'completed',
     duration_sec: Math.floor(conversation.length * 8),
-    ai_transcript: JSON.stringify(conversation), ai_summary: summary,
+    ai_transcript: JSON.stringify(conversation),
+    ai_summary: summary,
   })
 }
 
@@ -79,7 +102,8 @@ export async function generateCallSummary(conversation: ConversationMessage[]): 
   if (conversation.length === 0) return 'No conversation recorded.'
   const transcriptText = conversation.map(m => `${m.role === 'user' ? 'Caller' : 'AI'}: ${m.content}`).join('\n')
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514', max_tokens: 200,
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 200,
     messages: [{ role: 'user', content: `Summarize this phone call in 2-3 sentences. Who called, what did they need, what action is required?\n\n${transcriptText}` }],
   })
   const textBlock = response.content.find(block => block.type === 'text')
