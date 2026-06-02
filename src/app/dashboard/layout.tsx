@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Phone, LayoutDashboard, Users, LogOut, Mic, Video, CreditCard, GitBranch, Voicemail } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 
 const navItems = [
@@ -17,6 +18,21 @@ const navItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const [userInfo, setUserInfo] = useState({ initials: 'U', displayName: 'User' })
+  
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      const email = user.email || ''
+      const name = email.split('@')[0]
+      const parts = name.split(/[._-]/)
+      const initials = parts.map((p: string) => p[0]?.toUpperCase() || '').join('').slice(0, 2)
+      const displayName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
+      setUserInfo({ initials, displayName })
+    })
+  }, [])
+  
+  const { initials, displayName } = userInfo
   const router = useRouter()
   const supabase = createClient()
 
@@ -47,14 +63,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
         <div className="p-3 border-t border-blue-800">
-          <div className="px-3 py-2 mb-1">
+          <div className="px-3 py-2 mb-2">
             <p className="text-blue-300 text-xs font-medium mb-1">Active DIDs</p>
             <p className="text-white text-xs font-mono">404-592-5562</p>
             <p className="text-white text-xs font-mono">678-460-5180</p>
           </div>
           <button onClick={handleSignOut}
-            className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-blue-100 hover:bg-blue-800 transition text-sm font-medium w-full">
-            <LogOut size={16} />Sign Out
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-blue-100 hover:bg-blue-800 transition text-sm font-medium w-full group">
+            <div className="w-7 h-7 rounded-full bg-white text-[#0C2C68] flex items-center justify-center text-xs font-bold flex-shrink-0">
+              {initials}
+            </div>
+            <span className="flex-1 text-left truncate text-sm">{displayName}</span>
+            <LogOut size={14} className="opacity-60 group-hover:opacity-100" />
           </button>
         </div>
       </aside>
@@ -62,3 +82,4 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   )
 }
+

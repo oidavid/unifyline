@@ -12,6 +12,7 @@ export default async function DashboardPage() {
   const { count: totalCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', user.id)
   const { count: inboundCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', user.id).eq('direction', 'inbound')
   const { count: outboundCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', user.id).eq('direction', 'outbound')
+  const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
   const { data: aiConfig } = await supabase.from('ai_receptionist_config').select('active, greeting_text').eq('account_id', user.id).single()
   const { data: allCdrs } = await supabase.from('call_detail_records').select('duration_sec').eq('account_id', user.id)
 
@@ -19,24 +20,18 @@ export default async function DashboardPage() {
   const formatDuration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   const aiCallsCount = cdrs?.filter(c => c.ai_summary).length || 0
   const userEmail = user.email || ''
-  const userName = userEmail.split('@')[0]
+  const displayName = (profile?.full_name || userEmail.split('@')[0]).split(' ')[0]
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-          <p className="text-gray-500 mt-1">Welcome back, <span className="font-medium text-gray-700">{userName}</span></p>
+          <p className="text-gray-500 mt-1">Welcome back, <span className="font-medium text-gray-700">{displayName}</span></p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <p className="text-xs text-gray-400">Logged in as</p>
-            <p className="text-sm font-medium text-gray-700">{userEmail}</p>
-          </div>
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${aiConfig?.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-            <div className={`w-2 h-2 rounded-full ${aiConfig?.active ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-            AI {aiConfig?.active ? 'Active' : 'Inactive'}
-          </div>
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${aiConfig?.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+          <div className={`w-2 h-2 rounded-full ${aiConfig?.active ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+          AI {aiConfig?.active ? 'Active' : 'Inactive'}
         </div>
       </div>
 
@@ -139,3 +134,4 @@ export default async function DashboardPage() {
     </div>
   )
 }
+

@@ -1,6 +1,6 @@
 ﻿import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
-import { PhoneIncoming, PhoneOutgoing, Phone } from 'lucide-react'
+import { PhoneIncoming, PhoneOutgoing, Phone, Mic, Clock } from 'lucide-react'
 
 export default async function CallLogsPage() {
   const supabase = await createServerSupabaseClient()
@@ -12,59 +12,96 @@ export default async function CallLogsPage() {
     .select('*')
     .eq('account_id', user.id)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(100)
+
+  const formatDuration = (s: number) => {
+    if (!s) return '0:00'
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  }
 
   return (
-    <div className="p-8">
+    <div className="p-8 max-w-5xl mx-auto">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900">Call Logs</h2>
-        <p className="text-gray-500 mt-1">Complete history of all calls</p>
+        <p className="text-gray-500 mt-1">Complete history with AI summaries and conversation transcripts</p>
       </div>
-      <div className="bg-white rounded-xl shadow-sm">
-        {cdrs && cdrs.length > 0 ? (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500 border-b">
-                <th className="p-4">Direction</th>
-                <th className="p-4">From</th>
-                <th className="p-4">To</th>
-                <th className="p-4">Duration</th>
-                <th className="p-4">AI Summary</th>
-                <th className="p-4">Time</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {cdrs.map(cdr => (
-                <tr key={cdr.id} className="hover:bg-gray-50">
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
+
+      {cdrs && cdrs.length > 0 ? (
+        <div className="space-y-4">
+          {cdrs.map(cdr => {
+            let transcript: {role: string, content: string}[] = []
+            try {
+              if (cdr.ai_transcript) transcript = JSON.parse(cdr.ai_transcript)
+            } catch {}
+
+            return (
+              <div key={cdr.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-5">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-2.5 rounded-xl ${cdr.direction === 'inbound' ? 'bg-green-100' : 'bg-blue-100'}`}>
                       {cdr.direction === 'inbound'
-                        ? <PhoneIncoming size={16} className="text-green-500" />
-                        : <PhoneOutgoing size={16} className="text-blue-500" />
-                      }
-                      <span className={cdr.direction === 'inbound' ? 'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700' : 'px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700'}>
-                        {cdr.direction}
-                      </span>
+                        ? <PhoneIncoming size={18} className="text-green-600" />
+                        : <PhoneOutgoing size={18} className="text-blue-600" />}
                     </div>
-                  </td>
-                  <td className="p-4 text-gray-700 font-mono text-xs">{cdr.from_number}</td>
-                  <td className="p-4 text-gray-700 font-mono text-xs">{cdr.to_number}</td>
-                  <td className="p-4 text-gray-700">{cdr.duration_sec}s</td>
-                  <td className="p-4 text-gray-500 max-w-xs truncate">
-                    {cdr.ai_summary || 'No summary'}
-                  </td>
-                  <td className="p-4 text-gray-500 text-xs">{new Date(cdr.created_at).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="text-center py-16 text-gray-400">
-            <Phone size={48} className="mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No call records yet</p>
-          </div>
-        )}
-      </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-semibold text-gray-900">
+                          {cdr.direction === 'inbound' ? `From: ${cdr.from_number}` : `To: ${cdr.to_number}`}
+                        </span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${cdr.direction === 'inbound' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {cdr.direction}
+                        </span>
+                        {cdr.ai_summary && (
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 flex items-center gap-1">
+                            <Mic size={10} /> AI Handled
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                        <span className="flex items-center gap-1"><Clock size={12} />{formatDuration(cdr.duration_sec)}</span>
+                        <span>{new Date(cdr.created_at).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {cdr.ai_summary && (
+                    <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-100">
+                      <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-2 flex items-center gap-1">
+                        <Mic size={12} /> AI Summary
+                      </p>
+                      <p className="text-sm text-gray-700 leading-relaxed">{cdr.ai_summary}</p>
+                    </div>
+                  )}
+
+                  {transcript.length > 0 && (
+                    <details className="mt-3">
+                      <summary className="text-xs text-[#0C2C68] cursor-pointer hover:underline font-medium select-none">
+                        View full conversation ({transcript.length} exchanges)
+                      </summary>
+                      <div className="mt-3 space-y-2 max-h-64 overflow-y-auto bg-gray-50 rounded-lg p-3">
+                        {transcript.map((msg, i) => (
+                          <div key={i} className={`flex gap-2 ${msg.role === 'assistant' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-sm px-3 py-2 rounded-lg text-xs leading-relaxed ${msg.role === 'assistant' ? 'bg-[#0C2C68] text-white' : 'bg-white border border-gray-200 text-gray-800'}`}>
+                              <span className="font-semibold block mb-0.5 opacity-70">{msg.role === 'assistant' ? 'AI Receptionist' : 'Caller'}</span>
+                              {msg.content}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 text-center py-20 text-gray-400">
+          <Phone size={48} className="mx-auto mb-3 opacity-30" />
+          <p className="font-medium text-gray-600">No call records yet</p>
+          <p className="text-sm mt-1">Call (404) 592-5562 to test your AI receptionist</p>
+        </div>
+      )}
     </div>
   )
 }
