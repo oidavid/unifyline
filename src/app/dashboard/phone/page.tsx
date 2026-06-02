@@ -43,13 +43,7 @@ export default function SoftPhonePage() {
 
   async function initSIP() {
     try {
-      // TURN/STUN configuration
-const ICE_SERVERS = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:198.58.114.103:3478' },
-  { urls: 'turn:198.58.114.103:3478', username: 'unifyline', credential: 'UnifyTurn2026!' },
-]
-// Dynamically import JsSIP
+      // Dynamically import JsSIP
       const JsSIP = await import('jssip')
       JsSIP.debug.enable('JsSIP:*')
 
@@ -62,6 +56,8 @@ const ICE_SERVERS = [
         register: true,
         register_expires: 300,
         session_timers: false,
+        hackIpInContactEnabled: true,
+        hackViaWs: true,
       })
 
       userAgent.on('registered', () => {
@@ -105,14 +101,26 @@ const ICE_SERVERS = [
     const target = `sip:${dialNumber}@${SIP_SERVER}`
     const session = ua.call(target, {
       mediaConstraints: { audio: true, video: false },
-      pcConfig: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'turn:198.58.114.103:3478', username: 'unifyline', credential: 'UnifyTurn2026!' }] },
       rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false },
+      sessionTimersExpires: 120,
     })
 
     setCurrentCall(session)
     setCallState('connecting')
 
-    session.on('progress', () => setCallState('ringing'))
+    session.on('peerconnection', (e: any) => {
+        const pc = e.peerconnection
+        const iceServers = [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:198.58.114.103:3478' },
+          { urls: 'turn:198.58.114.103:3478', username: 'unifyline', credential: 'UnifyTurn2026!' },
+          { urls: 'turns:198.58.114.103:5349', username: 'unifyline', credential: 'UnifyTurn2026!' },
+        ]
+        const config = { iceServers, iceTransportPolicy: 'all' as RTCIceTransportPolicy }
+        Object.defineProperty(pc, 'localDescription', { writable: true })
+        if (pc.setConfiguration) pc.setConfiguration(config)
+      })
+      session.on('progress', () => setCallState('ringing'))
     session.on('accepted', () => {
       setCallState('active')
       if (session.connection && audioRef.current) {
@@ -339,6 +347,8 @@ const ICE_SERVERS = [
     </div>
   )
 }
+
+
 
 
 
