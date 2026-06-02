@@ -42,6 +42,9 @@ export async function POST(req: NextRequest) {
     let action: string = 'speak'
     let audioBuffer: ArrayBuffer | null = null
     let callbackNumber: string = ''
+    let sayText: string = ''
+    let callerName: string = ''
+    let callReason: string = ''
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData()
@@ -49,6 +52,7 @@ export async function POST(req: NextRequest) {
       callerNumber = formData.get('caller_id_number') as string || 'Unknown'
       action = formData.get('action') as string || 'speak'
       callbackNumber = formData.get('callback_number') as string || ''
+      sayText = formData.get('text') as string || ''
       const audioFile = formData.get('audio') as File | null
       if (audioFile && audioFile.size > 0) audioBuffer = await audioFile.arrayBuffer()
     } else {
@@ -57,6 +61,9 @@ export async function POST(req: NextRequest) {
       callerNumber = body.caller_id_number || 'Unknown'
       action = body.action || 'speak'
       callbackNumber = body.callback_number || ''
+      sayText = body.text || ''
+      callerName = body.caller_name || ''
+      callReason = body.reason || ''
       if (body.audio_b64) audioBuffer = Buffer.from(body.audio_b64, 'base64').buffer as ArrayBuffer
     }
 
@@ -66,7 +73,12 @@ export async function POST(req: NextRequest) {
     // HANDLE CALL END
     if (action === 'end') {
       const conversation = await getConversation(callUuid)
-      const summary = conversation.length > 0 ? await generateCallSummary(conversation) : 'Call ended with no conversation.'
+      const namePart = callerName ? `Caller: ${callerName}. ` : ''
+      const reasonPart = callReason ? `Reason: ${callReason}. ` : ''
+      const cbPart = callbackNumber ? `Callback: ${callbackNumber}.` : ''
+      const summary = (namePart || reasonPart)
+        ? `${namePart}${reasonPart}${cbPart}`
+        : conversation.length > 0 ? await generateCallSummary(conversation) : 'Call ended.'
       const accountId = await getDefaultAccountId() || ''
       await supabase.from('call_detail_records').upsert({
         call_uuid: callUuid,
@@ -139,6 +151,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, ai_response: msg, audio_b64: Buffer.from(audio).toString('base64') })
     }
 
+    // SAY - pure TTS, no AI
+    if (action === 'say') {
+      const textToSay = sayText || 'Hello'
+      const audio = await textToSpeech(textToSay)
+      return NextResponse.json({ success: true, ai_response: textToSay, audio_b64: Buffer.from(audio).toString('base64') })
+    }
+
+    // TRANSCRIBE ONLY - STT without AI response
+    if (action === 'transcribe_only') {
+      if (!audioBuffer || audioBuffer.byteLength < 1000) {
+        return NextResponse.json({ success: true, transcript: '' })
+      }
+      const transcript = await transcribeAudio(audioBuffer)
+      return NextResponse.json({ success: true, transcript })
+    }
     // HANDLE AUDIO - main conversation turn
     if (!audioBuffer || audioBuffer.byteLength < 1000) {
       const msg = "I'm sorry, I didn't catch that. Could you please repeat?"
@@ -180,3 +207,6 @@ export async function GET(req: NextRequest) {
   const conversation = await getConversation(callUuid)
   return NextResponse.json({ call_uuid: callUuid, conversation })
 }
+
+
+
