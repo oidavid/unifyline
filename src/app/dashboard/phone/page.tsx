@@ -56,8 +56,6 @@ export default function SoftPhonePage() {
         register: true,
         register_expires: 300,
         session_timers: false,
-        hackIpInContactEnabled: true,
-        hackViaWs: true,
       })
 
       userAgent.on('registered', () => {
@@ -347,6 +345,7 @@ export default function SoftPhonePage() {
     </div>
   )
 }
+
 
 
 
