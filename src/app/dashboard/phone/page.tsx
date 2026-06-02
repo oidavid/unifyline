@@ -15,6 +15,24 @@ const ICE_SERVERS = [
   { urls: 'turns:198.58.114.103:5349', username: 'unifyline', credential: 'UnifyTurn2026!' },
 ]
 
+// JsSIP creates RTCPeerConnection internally before any event fires.
+// The only way to inject ICE/TURN config is to patch window.RTCPeerConnection
+// before calling ua.call() or session.answer(), then restore it immediately after.
+function patchedCall<T>(fn: () => T): T {
+  const NativePC = window.RTCPeerConnection
+  function PatchedPC(this: any, config: RTCConfiguration) {
+    return new NativePC({ ...config, iceServers: ICE_SERVERS, iceTransportPolicy: 'all' })
+  }
+  PatchedPC.prototype = NativePC.prototype
+  ;(PatchedPC as any).generateCertificate = NativePC.generateCertificate?.bind(NativePC)
+  window.RTCPeerConnection = PatchedPC as any
+  try {
+    return fn()
+  } finally {
+    window.RTCPeerConnection = NativePC
+  }
+}
+
 export default function SoftPhonePage() {
   const [callState, setCallState] = useState<CallState>('idle')
   const [dialNumber, setDialNumber] = useState('')
@@ -26,9 +44,9 @@ export default function SoftPhonePage() {
   const [registered, setRegistered] = useState(false)
   const [recentCalls, setRecentCalls] = useState<any[]>([])
   const [showSettings, setShowSettings] = useState(false)
+  const [showDtmf, setShowDtmf] = useState(false)
   const [ua, setUa] = useState<any>(null)
   const [currentCall, setCurrentCall] = useState<any>(null)
-  const [showDtmf, setShowDtmf] = useState(false)
   const timerRef = useRef<any>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const currentCallRef = useRef<any>(null)
@@ -63,16 +81,16 @@ export default function SoftPhonePage() {
       const userAgent = new JsSIP.UA({
         sockets: [socket],
         uri: `sip:${extension}@${SIP_SERVER}`,
-        password: password,
+        password,
         display_name: `Ext ${extension}`,
         register: true,
         register_expires: 300,
         session_timers: false,
       })
 
-      userAgent.on('registered', () => { setRegistered(true) })
-      userAgent.on('unregistered', () => { setRegistered(false) })
-      userAgent.on('registrationFailed', () => { setRegistered(false) })
+      userAgent.on('registered', () => setRegistered(true))
+      userAgent.on('unregistered', () => setRegistered(false))
+      userAgent.on('registrationFailed', () => setRegistered(false))
 
       userAgent.on('newRTCSession', (e: any) => {
         const session = e.session
@@ -103,20 +121,20 @@ export default function SoftPhonePage() {
         audioRef.current.srcObject = remoteStream
         audioRef.current.play().catch((e: any) => console.warn('[Audio]', e))
       }
-    } catch(e) {
-      console.warn('[Audio] attach error:', e)
-    }
+    } catch(e) { console.warn('[Audio] attach error:', e) }
   }
 
   function handleCall() {
     if (!dialNumber || !ua) return
 
     const target = `sip:${dialNumber}@${SIP_SERVER}`
-    const session = ua.call(target, {
+
+    // Patch RTCPeerConnection so TURN servers are set at creation time
+    const session = patchedCall(() => ua.call(target, {
       mediaConstraints: { audio: true, video: false },
       rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false },
       sessionTimersExpires: 120,
-    })
+    }))
 
     setCurrentCall(session)
     currentCallRef.current = session
@@ -124,34 +142,21 @@ export default function SoftPhonePage() {
 
     session.on('peerconnection', (data: any) => {
       const pc = data.peerconnection
+      console.log('[ICE] servers:', pc.getConfiguration?.()?.iceServers?.length)
       pc.addEventListener('icecandidate', (e: any) => {
-        console.log('[ICE]', e.candidate?.type, e.candidate?.address)
+        console.log('[ICE] candidate type:', e.candidate?.type, e.candidate?.address)
+      })
+      pc.addEventListener('connectionstatechange', () => {
+        console.log('[ICE] connection state:', pc.connectionState)
       })
     })
 
-    session.on('progress', () => {
-      console.log('[SIP] progress — ringing')
-      setCallState('ringing')
-    })
-
-    session.on('accepted', () => {
-      console.log('[SIP] accepted')
-      setCallState('active')
-      attachAudio(session)
-    })
-
-    session.on('confirmed', () => {
-      console.log('[SIP] confirmed')
-      setCallState('active')
-      attachAudio(session)
-    })
-
-    session.on('ended', () => {
-      setCallState('idle'); setCurrentCall(null); currentCallRef.current = null; loadRecentCalls()
-    })
-
+    session.on('progress', () => setCallState('ringing'))
+    session.on('accepted', () => { setCallState('active'); attachAudio(session) })
+    session.on('confirmed', () => { setCallState('active'); attachAudio(session) })
+    session.on('ended', () => { setCallState('idle'); setCurrentCall(null); currentCallRef.current = null; loadRecentCalls() })
     session.on('failed', (e: any) => {
-      console.error('[SIP] failed:', e?.cause)
+      console.error('[SIP] failed:', e?.cause, e?.message)
       setCallState('idle'); setCurrentCall(null); currentCallRef.current = null
     })
   }
@@ -164,20 +169,19 @@ export default function SoftPhonePage() {
 
   function handleAnswer() {
     if (!currentCallRef.current) return
-    currentCallRef.current.answer({ mediaConstraints: { audio: true, video: false } })
+    // Patch RTCPeerConnection for the answer too
+    patchedCall(() =>
+      currentCallRef.current.answer({ mediaConstraints: { audio: true, video: false } })
+    )
     setCallState('active')
-    setTimeout(() => attachAudio(currentCallRef.current), 300)
+    setTimeout(() => attachAudio(currentCallRef.current), 500)
   }
 
   function sendDtmf(tone: string) {
     try {
-      if (currentCallRef.current) {
-        currentCallRef.current.sendDTMF(tone, { duration: 160, interToneGap: 1200 })
-        console.log('[DTMF] sent:', tone)
-      }
-    } catch(e) {
-      console.warn('[DTMF] error:', e)
-    }
+      currentCallRef.current?.sendDTMF(tone, { duration: 160, interToneGap: 1200 })
+      console.log('[DTMF]', tone)
+    } catch(e) { console.warn('[DTMF] error:', e) }
   }
 
   function toggleMute() {
@@ -266,36 +270,15 @@ export default function SoftPhonePage() {
               </div>
             </div>
             <div className="px-6 pb-6">
-              {/* Main dialpad — hidden during active call if DTMF pad is shown */}
-              {!showDtmf && (
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
-                    <button key={key}
-                      onClick={() => callState === 'active' ? sendDtmf(key) : setDialNumber(d => d + key)}
-                      className="bg-white/10 hover:bg-white/20 text-white font-bold text-lg py-3 rounded-xl transition active:scale-95">
-                      {key}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* DTMF pad shown during active call */}
-              {showDtmf && callState === 'active' && (
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-blue-300 text-xs">Keypad</span>
-                    <button onClick={() => setShowDtmf(false)} className="text-blue-300 text-xs underline">Hide</button>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
-                      <button key={key} onClick={() => sendDtmf(key)}
-                        className="bg-white/10 hover:bg-white/20 active:bg-white/30 text-white font-bold text-lg py-3 rounded-xl transition active:scale-95">
-                        {key}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
+                  <button key={key}
+                    onClick={() => callState === 'active' ? sendDtmf(key) : setDialNumber(d => d + key)}
+                    className="bg-white/10 hover:bg-white/20 text-white font-bold text-lg py-3 rounded-xl transition active:scale-95">
+                    {key}
+                  </button>
+                ))}
+              </div>
 
               {callState === 'idle' && (
                 <div className="flex gap-3">
@@ -322,8 +305,8 @@ export default function SoftPhonePage() {
                       <button onClick={toggleMute} className={`flex-1 py-3 rounded-xl text-xs font-medium flex items-center justify-center gap-1 ${muted ? 'bg-red-500 text-white' : 'bg-white/10 text-white'}`}>
                         {muted ? <MicOff size={14}/> : <Mic size={14}/>}{muted ? 'Unmute' : 'Mute'}
                       </button>
-                      <button onClick={() => setShowDtmf(d => !d)} className="flex-1 py-3 rounded-xl text-xs font-medium flex items-center justify-center gap-1 bg-white/10 text-white">
-                        <Volume2 size={14}/>Keypad
+                      <button className="flex-1 py-3 rounded-xl text-xs font-medium flex items-center justify-center gap-1 bg-white/10 text-white">
+                        <Volume2 size={14}/>Speaker
                       </button>
                     </div>
                   )}
