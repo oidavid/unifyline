@@ -6,13 +6,37 @@ import {
   transcribeAudio,
   saveCallTranscript,
   generateCallSummary,
+  getDefaultAccountId,
   ConversationMessage,
 } from '@/lib/receptionist'
+import { createClient } from '@supabase/supabase-js'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
 
-const conversations = new Map<string, ConversationMessage[]>()
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+async function getConversation(callUuid: string): Promise<ConversationMessage[]> {
+  const { data } = await supabase
+    .from('call_sessions')
+    .select('conversation')
+    .eq('call_uuid', callUuid)
+    .single()
+  if (!data) return []
+  try { return JSON.parse(data.conversation) } catch { return [] }
+}
+
+async function saveConversation(callUuid: string, callerNumber: string, conversation: ConversationMessage[]) {
+  await supabase.from('call_sessions').upsert({
+    call_uuid: callUuid,
+    caller_number: callerNumber,
+    conversation: JSON.stringify(conversation),
+    updated_at: new Date().toISOString(),
+  })
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,7 +52,6 @@ export async function POST(req: NextRequest) {
       const audioFile = formData.get('audio') as File | null
       if (audioFile && audioFile.size > 0) {
         audioBuffer = await audioFile.arrayBuffer()
-        console.log(`[Receptionist] Received audio: ${audioFile.size} bytes`)
       }
     } else {
       const body = await req.json()
@@ -42,22 +65,40 @@ export async function POST(req: NextRequest) {
 
     console.log(`[Receptionist] ${callUuid} | action: ${action} | audio: ${audioBuffer?.byteLength ?? 0} bytes`)
 
-    if (action === 'end') {
-      const conversation = conversations.get(callUuid) || []
-      const summary = await generateCallSummary(conversation)
-      await saveCallTranscript(callUuid, '', callerNumber, conversation, summary)
-      conversations.delete(callUuid)
-      return NextResponse.json({ success: true, summary })
-    }
-
-    if (!conversations.has(callUuid)) conversations.set(callUuid, [])
-    const conversation = conversations.get(callUuid)!
     const config = await getActiveReceptionistConfig()
     if (!config) throw new Error('No config')
 
+    // Handle call end - save to CDR
+    if (action === 'end') {
+      const conversation = await getConversation(callUuid)
+      const summary = conversation.length > 0
+        ? await generateCallSummary(conversation)
+        : 'Call ended with no conversation recorded.'
+
+      const accountId = await getDefaultAccountId() || ''
+      await supabase.from('call_detail_records').upsert({
+        call_uuid: callUuid,
+        account_id: accountId,
+        direction: 'inbound',
+        from_number: callerNumber,
+        to_number: 'AI Receptionist',
+        status: 'completed',
+        duration_sec: Math.floor(conversation.length * 8),
+        ai_transcript: JSON.stringify(conversation),
+        ai_summary: summary,
+      })
+
+      // Clean up session
+      await supabase.from('call_sessions').delete().eq('call_uuid', callUuid)
+      console.log(`[Receptionist] Saved CDR for ${callUuid} | Summary: ${summary}`)
+      return NextResponse.json({ success: true, summary })
+    }
+
+    // Handle greeting
     if (action === 'greet') {
       const audio = await textToSpeech(config.greeting_text)
-      conversation.push({ role: 'assistant', content: config.greeting_text })
+      const conversation: ConversationMessage[] = [{ role: 'assistant', content: config.greeting_text }]
+      await saveConversation(callUuid, callerNumber, conversation)
       return NextResponse.json({
         success: true,
         ai_response: config.greeting_text,
@@ -65,6 +106,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Handle silence
     if (action === 'silence') {
       const msg = "I'm sorry, I didn't catch that. Could you please repeat?"
       const audio = await textToSpeech(msg)
@@ -77,7 +119,6 @@ export async function POST(req: NextRequest) {
 
     // Process caller audio
     if (!audioBuffer || audioBuffer.byteLength < 1000) {
-      console.log(`[Receptionist] Audio too small: ${audioBuffer?.byteLength ?? 0} bytes`)
       const msg = "I'm sorry, I didn't catch that. Could you please repeat?"
       const audio = await textToSpeech(msg)
       return NextResponse.json({
@@ -101,10 +142,16 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Load conversation from Supabase, add user message, get AI response
+    const conversation = await getConversation(callUuid)
     conversation.push({ role: 'user', content: transcript })
+
     const aiResponse = await generateAIResponse(conversation, config)
     console.log(`[Receptionist] ${callUuid} | AI: "${aiResponse}"`)
     conversation.push({ role: 'assistant', content: aiResponse })
+
+    // Save updated conversation to Supabase
+    await saveConversation(callUuid, callerNumber, conversation)
 
     const responseAudio = await textToSpeech(aiResponse)
 
@@ -124,7 +171,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const callUuid = searchParams.get('call_uuid')
-  if (!callUuid) return NextResponse.json({ active_calls: conversations.size })
-  const conversation = conversations.get(callUuid) || []
+  if (!callUuid) return NextResponse.json({ active_calls: 0 })
+  const conversation = await getConversation(callUuid)
   return NextResponse.json({ call_uuid: callUuid, conversation })
 }
