@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
 
     // Handle callback prompt - announce caller ID and ask to confirm
     if (action === 'callback_prompt') {
-      const cbNumber = body.callback_number || callerNumber
+      const cbNumber = (typeof body !== "undefined" && body?.callback_number) || callerNumber
       const formatted = cbNumber.replace(/^\+?1?(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3')
       const msg = `I have your callback number as ${formatted}. Press 1 to confirm that number, or press 2 to enter a different number.`
       const audio = await textToSpeech(msg)
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
 
     // Handle callback confirmed
     if (action === 'callback_confirmed') {
-      const cbNumber = body.callback_number || callerNumber
+      const cbNumber = (typeof body !== "undefined" && body?.callback_number) || callerNumber
       const formatted = cbNumber.replace(/^\+?1?(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3')
       const msg = `Perfect. We will call you back at ${formatted}. Thank you for calling and have a great day!`
       const audio = await textToSpeech(msg)
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
 
     // Handle number readback for confirmation
     if (action === 'readback_number') {
-      const cbNumber = body.callback_number || callerNumber
+      const cbNumber = (typeof body !== "undefined" && body?.callback_number) || callerNumber
       const digits = cbNumber.split('').join(', ')
       const msg = `I have ${digits}. Press 1 if that is correct, or press 2 to try again.`
       const audio = await textToSpeech(msg)
@@ -219,6 +219,7 @@ export async function GET(req: NextRequest) {
   const conversation = await getConversation(callUuid)
   return NextResponse.json({ call_uuid: callUuid, conversation })
 }
+
 
 
 
