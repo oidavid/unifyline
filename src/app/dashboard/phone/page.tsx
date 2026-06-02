@@ -105,7 +105,7 @@ const ICE_SERVERS = [
     const target = `sip:${dialNumber}@${SIP_SERVER}`
     const session = ua.call(target, {
       mediaConstraints: { audio: true, video: false },
-      pcConfig: { iceServers: ICE_SERVERS },
+      pcConfig: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'turn:198.58.114.103:3478', username: 'unifyline', credential: 'UnifyTurn2026!' }] },
       rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false },
     })
 
@@ -339,6 +339,7 @@ const ICE_SERVERS = [
     </div>
   )
 }
+
 
 
 
