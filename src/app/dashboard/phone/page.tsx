@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState, useEffect, useRef } from 'react'
 import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, PhoneIncoming, Delete, Wifi, WifiOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
@@ -7,6 +7,35 @@ type CallState = 'idle' | 'connecting' | 'ringing' | 'active' | 'incoming'
 
 const SIP_SERVER = '198.58.114.103'
 const WS_URL = `wss://${SIP_SERVER}:7443`
+
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:198.58.114.103:3478' },
+  { urls: 'turn:198.58.114.103:3478', username: 'unifyline', credential: 'UnifyTurn2026!' },
+  { urls: 'turns:198.58.114.103:5349', username: 'unifyline', credential: 'UnifyTurn2026!' },
+]
+
+// Monkey-patch RTCPeerConnection to inject TURN servers before JsSIP creates it.
+// JsSIP creates the PC before firing the 'peerconnection' event, so setConfiguration
+// is too late — ICE gathering has already started without TURN by then.
+function withTurnServers<T>(fn: () => T): T {
+  const OriginalPC = window.RTCPeerConnection
+  const PatchedPC = function (config: RTCConfiguration) {
+    const merged = {
+      ...config,
+      iceServers: ICE_SERVERS,
+      iceTransportPolicy: 'all' as RTCIceTransportPolicy,
+    }
+    return new OriginalPC(merged)
+  } as unknown as typeof RTCPeerConnection
+  PatchedPC.prototype = OriginalPC.prototype
+  window.RTCPeerConnection = PatchedPC
+  try {
+    return fn()
+  } finally {
+    window.RTCPeerConnection = OriginalPC
+  }
+}
 
 export default function SoftPhonePage() {
   const [callState, setCallState] = useState<CallState>('idle')
@@ -43,7 +72,6 @@ export default function SoftPhonePage() {
 
   async function initSIP() {
     try {
-      // Dynamically import JsSIP
       const JsSIP = await import('jssip')
       JsSIP.debug.enable('JsSIP:*')
 
@@ -94,31 +122,29 @@ export default function SoftPhonePage() {
 
   function handleCall() {
     if (!dialNumber) return
-    if (!ua) { setCallState('connecting'); setTimeout(() => setCallState('ringing'), 800); setTimeout(() => setCallState('active'), 3000); return }
+    if (!ua) {
+      setCallState('connecting')
+      setTimeout(() => setCallState('ringing'), 800)
+      setTimeout(() => setCallState('active'), 3000)
+      return
+    }
 
     const target = `sip:${dialNumber}@${SIP_SERVER}`
-    const session = ua.call(target, {
-      mediaConstraints: { audio: true, video: false },
-      rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false },
-      sessionTimersExpires: 120,
-    })
+
+    // Wrap ua.call() in the monkey-patch so TURN servers are injected
+    // into RTCPeerConnection at creation time, before ICE gathering starts.
+    const session = withTurnServers(() =>
+      ua.call(target, {
+        mediaConstraints: { audio: true, video: false },
+        rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false },
+        sessionTimersExpires: 120,
+      })
+    )
 
     setCurrentCall(session)
     setCallState('connecting')
 
-    session.on('peerconnection', (e: any) => {
-        const pc = e.peerconnection
-        const iceServers = [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:198.58.114.103:3478' },
-          { urls: 'turn:198.58.114.103:3478', username: 'unifyline', credential: 'UnifyTurn2026!' },
-          { urls: 'turns:198.58.114.103:5349', username: 'unifyline', credential: 'UnifyTurn2026!' },
-        ]
-        const config = { iceServers, iceTransportPolicy: 'all' as RTCIceTransportPolicy }
-        Object.defineProperty(pc, 'localDescription', { writable: true })
-        if (pc.setConfiguration) pc.setConfiguration(config)
-      })
-      session.on('progress', () => setCallState('ringing'))
+    session.on('progress', () => setCallState('ringing'))
     session.on('accepted', () => {
       setCallState('active')
       if (session.connection && audioRef.current) {
@@ -129,7 +155,11 @@ export default function SoftPhonePage() {
       }
     })
     session.on('ended', () => { setCallState('idle'); setCurrentCall(null); loadRecentCalls() })
-    session.on('failed', () => { setCallState('idle'); setCurrentCall(null) })
+    session.on('failed', (e: any) => {
+      console.error('[SIP] Call failed:', e?.cause, e?.message)
+      setCallState('idle')
+      setCurrentCall(null)
+    })
   }
 
   function handleHangup() {
@@ -139,7 +169,12 @@ export default function SoftPhonePage() {
 
   function handleAnswer() {
     if (!currentCall) return
-    currentCall.answer({ mediaConstraints: { audio: true, video: false } })
+
+    // Also patch RTCPeerConnection when answering an incoming call
+    withTurnServers(() =>
+      currentCall.answer({ mediaConstraints: { audio: true, video: false } })
+    )
+
     setCallState('active')
     if (currentCall.connection && audioRef.current) {
       const remoteStream = new MediaStream()
@@ -345,17 +380,3 @@ export default function SoftPhonePage() {
     </div>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
