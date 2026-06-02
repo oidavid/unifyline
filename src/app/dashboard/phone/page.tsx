@@ -43,7 +43,13 @@ export default function SoftPhonePage() {
 
   async function initSIP() {
     try {
-      // Dynamically import JsSIP
+      // TURN/STUN configuration
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:198.58.114.103:3478' },
+  { urls: 'turn:198.58.114.103:3478', username: 'unifyline', credential: 'UnifyTurn2026!' },
+]
+// Dynamically import JsSIP
       const JsSIP = await import('jssip')
       JsSIP.debug.enable('JsSIP:*')
 
@@ -99,6 +105,7 @@ export default function SoftPhonePage() {
     const target = `sip:${dialNumber}@${SIP_SERVER}`
     const session = ua.call(target, {
       mediaConstraints: { audio: true, video: false },
+      pcConfig: { iceServers: ICE_SERVERS },
       rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false },
     })
 
@@ -332,6 +339,8 @@ export default function SoftPhonePage() {
     </div>
   )
 }
+
+
 
 
 
