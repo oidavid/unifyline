@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase'
 
 type CallState = 'idle' | 'connecting' | 'ringing' | 'active' | 'incoming'
 
-const SIP_SERVER = 'sip.unifyline.com'
+const SIP_SERVER = '198.58.114.103'
 const WS_URL = `wss://${SIP_SERVER}:7443`
 
 export default function SoftPhonePage() {
@@ -332,6 +332,7 @@ export default function SoftPhonePage() {
     </div>
   )
 }
+
 
 
 
