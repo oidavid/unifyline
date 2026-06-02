@@ -8,26 +8,30 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
+  const { data: profile } = await supabase.from('profiles').select('full_name, first_name').eq('id', user.id).single()
   const { data: cdrs } = await supabase.from('call_detail_records').select('*').eq('account_id', user.id).order('created_at', { ascending: false }).limit(5)
   const { count: totalCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', user.id)
   const { count: inboundCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', user.id).eq('direction', 'inbound')
   const { count: outboundCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', user.id).eq('direction', 'outbound')
-  const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
   const { data: aiConfig } = await supabase.from('ai_receptionist_config').select('active, greeting_text').eq('account_id', user.id).single()
   const { data: allCdrs } = await supabase.from('call_detail_records').select('duration_sec').eq('account_id', user.id)
 
   const avgDuration = allCdrs && allCdrs.length > 0 ? Math.round(allCdrs.reduce((a, c) => a + (c.duration_sec || 0), 0) / allCdrs.length) : 0
   const formatDuration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   const aiCallsCount = cdrs?.filter(c => c.ai_summary).length || 0
-  const userEmail = user.email || ''
-  const displayName = (profile?.full_name || userEmail.split('@')[0]).split(' ')[0]
+
+  // Use first_name from profile, fall back to first word of full_name, then email prefix
+  const firstName = profile?.first_name
+    || profile?.full_name?.split(' ')[0]
+    || user.email?.split('@')[0]
+    || 'there'
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-          <p className="text-gray-500 mt-1">Welcome back, <span className="font-medium text-gray-700">{displayName}</span></p>
+          <p className="text-gray-500 mt-1">Welcome back, <span className="font-medium text-gray-700">{firstName}</span></p>
         </div>
         <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${aiConfig?.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
           <div className={`w-2 h-2 rounded-full ${aiConfig?.active ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
@@ -134,4 +138,3 @@ export default async function DashboardPage() {
     </div>
   )
 }
-
