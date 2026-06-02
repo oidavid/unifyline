@@ -1,14 +1,16 @@
 ﻿'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Phone, LayoutDashboard, Users, LogOut, Mic, Video, CreditCard, GitBranch, Voicemail } from 'lucide-react'
+import { Phone, LayoutDashboard, Users, LogOut, Mic, Video, CreditCard, GitBranch, Voicemail, PhoneCall, Hash } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/dashboard/phone', icon: PhoneCall, label: 'Phone' },
   { href: '/dashboard/calls', icon: Phone, label: 'Call Logs' },
   { href: '/dashboard/ai-receptionist', icon: Mic, label: 'AI Receptionist' },
+  { href: '/dashboard/extensions', icon: Hash, label: 'Extensions' },
   { href: '/dashboard/follow-me', icon: GitBranch, label: 'Follow-Me' },
   { href: '/dashboard/voicemail', icon: Voicemail, label: 'Voicemail' },
   { href: '/dashboard/conference', icon: Video, label: 'Conference' },
@@ -53,12 +55,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {navItems.map(({ href, icon: Icon, label }) => {
             const active = pathname === href
             return (
-              <Link key={href} href={href}
-                className={active
-                  ? 'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-white text-[#0C2C68]'
-                  : 'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-blue-100 hover:bg-blue-800 transition'
-                }>
-                <Icon size={16} />{label}
+              <Link key={href} href={href} className={active ? 'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-white text-[#0C2C68]' : 'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-blue-100 hover:bg-blue-800 transition'}>
+                <Icon size={16}/>{label}
               </Link>
             )
           })}
@@ -70,15 +68,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <p className="text-white text-xs font-mono">678-460-5180</p>
           </div>
           <div className="flex items-center gap-2 px-3 py-2 mb-1">
-            <div className="w-7 h-7 rounded-full bg-white text-[#0C2C68] flex items-center justify-center text-xs font-bold flex-shrink-0">
-              {initials}
-            </div>
+            <div className="w-7 h-7 rounded-full bg-white text-[#0C2C68] flex items-center justify-center text-xs font-bold flex-shrink-0">{initials}</div>
             <span className="flex-1 text-xs text-blue-200 truncate">{displayName}</span>
           </div>
-          <button onClick={handleSignOut}
-            className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-blue-100 hover:bg-blue-800 transition text-sm font-medium w-full">
-            <LogOut size={16} />
-            Sign Out
+          <button onClick={handleSignOut} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-blue-100 hover:bg-blue-800 transition text-sm font-medium w-full">
+            <LogOut size={16}/>Sign Out
           </button>
         </div>
       </aside>
