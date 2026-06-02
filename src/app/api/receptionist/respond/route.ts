@@ -122,6 +122,45 @@ export async function POST(req: NextRequest) {
       })
     }
 
+
+    // Handle callback prompt - announce caller ID and ask to confirm
+    if (action === 'callback_prompt') {
+      const cbNumber = body.callback_number || callerNumber
+      const formatted = cbNumber.replace(/^\+?1?(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3')
+      const msg = `I have your callback number as ${formatted}. Press 1 to confirm that number, or press 2 to enter a different number.`
+      const audio = await textToSpeech(msg)
+      return NextResponse.json({ success: true, ai_response: msg, audio_b64: Buffer.from(audio).toString('base64') })
+    }
+
+    // Handle callback confirmed
+    if (action === 'callback_confirmed') {
+      const cbNumber = body.callback_number || callerNumber
+      const formatted = cbNumber.replace(/^\+?1?(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3')
+      const msg = `Perfect. We will call you back at ${formatted}. Thank you for calling and have a great day!`
+      const audio = await textToSpeech(msg)
+      // Save callback number to conversation
+      const conversation = await getConversation(callUuid)
+      conversation.push({ role: 'assistant', content: `Callback number confirmed: ${cbNumber}` })
+      await saveConversation(callUuid, callerNumber, conversation)
+      return NextResponse.json({ success: true, ai_response: msg, audio_b64: Buffer.from(audio).toString('base64') })
+    }
+
+    // Handle request for alternate number
+    if (action === 'request_alternate') {
+      const msg = `Please enter your 10-digit callback number now, followed by the pound sign.`
+      const audio = await textToSpeech(msg)
+      return NextResponse.json({ success: true, ai_response: msg, audio_b64: Buffer.from(audio).toString('base64') })
+    }
+
+    // Handle number readback for confirmation
+    if (action === 'readback_number') {
+      const cbNumber = body.callback_number || callerNumber
+      const digits = cbNumber.split('').join(', ')
+      const msg = `I have ${digits}. Press 1 if that is correct, or press 2 to try again.`
+      const audio = await textToSpeech(msg)
+      return NextResponse.json({ success: true, ai_response: msg, audio_b64: Buffer.from(audio).toString('base64') })
+    }
+
     // Process caller audio
     if (!audioBuffer || audioBuffer.byteLength < 1000) {
       const msg = "I'm sorry, I didn't catch that. Could you please repeat?"
@@ -180,6 +219,7 @@ export async function GET(req: NextRequest) {
   const conversation = await getConversation(callUuid)
   return NextResponse.json({ call_uuid: callUuid, conversation })
 }
+
 
 
 
