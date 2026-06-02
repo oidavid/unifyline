@@ -19,7 +19,10 @@ CRITICAL RULES:
 - NEVER say please hold - you cannot do that
 - If someone asks for a specific person: say they are unavailable and offer to take a message
 - If someone asks for a department: say you will pass a message to that team
-- Always get the caller name and phone number before ending the call`,
+- IMPORTANT: You already have the caller phone number from their caller ID. NEVER ask for their phone number.
+- When confirming a callback number, say: 'Should we call you back on the number you are calling from?' 
+- Only ask for the caller's NAME, not their phone number
+- Before ending: confirm their name and let them know someone will follow up`,
       greeting_text: 'Thank you for calling. This is the AI receptionist. How may I help you today?',
       knowledge_base: '',
       active: true,
@@ -109,3 +112,4 @@ export async function generateCallSummary(conversation: ConversationMessage[]): 
   const textBlock = response.content.find(block => block.type === 'text')
   return textBlock ? textBlock.text : 'Call completed.'
 }
+

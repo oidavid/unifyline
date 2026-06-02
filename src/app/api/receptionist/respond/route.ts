@@ -97,7 +97,12 @@ export async function POST(req: NextRequest) {
     // Handle greeting
     if (action === 'greet') {
       const audio = await textToSpeech(config.greeting_text)
-      const conversation: ConversationMessage[] = [{ role: 'assistant', content: config.greeting_text }]
+      // Inject caller ID context so AI knows the number without asking
+      const systemNote = CALLER INFO: The caller's phone number is . You already have this - do not ask for it. If they want a callback, confirm this number.
+      const conversation: ConversationMessage[] = [
+        { role: 'user', content: systemNote },
+        { role: 'assistant', content: config.greeting_text }
+      ]
       await saveConversation(callUuid, callerNumber, conversation)
       return NextResponse.json({
         success: true,
@@ -175,3 +180,4 @@ export async function GET(req: NextRequest) {
   const conversation = await getConversation(callUuid)
   return NextResponse.json({ call_uuid: callUuid, conversation })
 }
+
