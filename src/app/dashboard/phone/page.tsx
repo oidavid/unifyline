@@ -15,28 +15,6 @@ const ICE_SERVERS = [
   { urls: 'turns:198.58.114.103:5349', username: 'unifyline', credential: 'UnifyTurn2026!' },
 ]
 
-// Monkey-patch RTCPeerConnection to inject TURN servers before JsSIP creates it.
-// JsSIP creates the PC before firing the 'peerconnection' event, so setConfiguration
-// is too late — ICE gathering has already started without TURN by then.
-function withTurnServers<T>(fn: () => T): T {
-  const OriginalPC = window.RTCPeerConnection
-  const PatchedPC = function (config: RTCConfiguration) {
-    const merged = {
-      ...config,
-      iceServers: ICE_SERVERS,
-      iceTransportPolicy: 'all' as RTCIceTransportPolicy,
-    }
-    return new OriginalPC(merged)
-  } as unknown as typeof RTCPeerConnection
-  PatchedPC.prototype = OriginalPC.prototype
-  window.RTCPeerConnection = PatchedPC
-  try {
-    return fn()
-  } finally {
-    window.RTCPeerConnection = OriginalPC
-  }
-}
-
 export default function SoftPhonePage() {
   const [callState, setCallState] = useState<CallState>('idle')
   const [dialNumber, setDialNumber] = useState('')
@@ -120,6 +98,15 @@ export default function SoftPhonePage() {
     }
   }
 
+  function attachAudio(session: any) {
+    if (session.connection && audioRef.current) {
+      const remoteStream = new MediaStream()
+      session.connection.getReceivers().forEach((r: any) => remoteStream.addTrack(r.track))
+      audioRef.current.srcObject = remoteStream
+      audioRef.current.play().catch((e: any) => console.warn('[SIP] Audio play error:', e))
+    }
+  }
+
   function handleCall() {
     if (!dialNumber) return
     if (!ua) {
@@ -131,28 +118,36 @@ export default function SoftPhonePage() {
 
     const target = `sip:${dialNumber}@${SIP_SERVER}`
 
-    // Wrap ua.call() in the monkey-patch so TURN servers are injected
-    // into RTCPeerConnection at creation time, before ICE gathering starts.
-    const session = withTurnServers(() =>
-      ua.call(target, {
-        mediaConstraints: { audio: true, video: false },
-        rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false },
-        sessionTimersExpires: 120,
-      })
-    )
+    const session = ua.call(target, {
+      mediaConstraints: { audio: true, video: false },
+      rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false },
+      sessionTimersExpires: 120,
+      pcConfig: {
+        iceServers: ICE_SERVERS,
+        iceTransportPolicy: 'all',
+      },
+    })
 
     setCurrentCall(session)
     setCallState('connecting')
 
+    // Inject TURN servers into the peer connection as soon as it's available
+    session.on('peerconnection', (data: any) => {
+      const pc = data.peerconnection
+      console.log('[SIP] PeerConnection created, ICE servers:', pc.getConfiguration?.()?.iceServers)
+      pc.addEventListener('icecandidate', (e: any) => {
+        console.log('[SIP] ICE candidate:', e.candidate?.type, e.candidate?.address)
+      })
+    })
+
     session.on('progress', () => setCallState('ringing'))
     session.on('accepted', () => {
       setCallState('active')
-      if (session.connection && audioRef.current) {
-        const remoteStream = new MediaStream()
-        session.connection.getReceivers().forEach((r: any) => remoteStream.addTrack(r.track))
-        audioRef.current.srcObject = remoteStream
-        audioRef.current.play()
-      }
+      attachAudio(session)
+    })
+    session.on('confirmed', () => {
+      setCallState('active')
+      attachAudio(session)
     })
     session.on('ended', () => { setCallState('idle'); setCurrentCall(null); loadRecentCalls() })
     session.on('failed', (e: any) => {
@@ -169,19 +164,15 @@ export default function SoftPhonePage() {
 
   function handleAnswer() {
     if (!currentCall) return
-
-    // Also patch RTCPeerConnection when answering an incoming call
-    withTurnServers(() =>
-      currentCall.answer({ mediaConstraints: { audio: true, video: false } })
-    )
-
+    currentCall.answer({
+      mediaConstraints: { audio: true, video: false },
+      pcConfig: {
+        iceServers: ICE_SERVERS,
+        iceTransportPolicy: 'all',
+      },
+    })
     setCallState('active')
-    if (currentCall.connection && audioRef.current) {
-      const remoteStream = new MediaStream()
-      currentCall.connection.getReceivers().forEach((r: any) => remoteStream.addTrack(r.track))
-      audioRef.current.srcObject = remoteStream
-      audioRef.current.play()
-    }
+    setTimeout(() => attachAudio(currentCall), 500)
   }
 
   function toggleMute() {
