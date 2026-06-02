@@ -56,6 +56,7 @@ export default function SoftPhonePage() {
         register: true,
         register_expires: 300,
         session_timers: false,
+        pcConfig: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' },{ urls: 'stun:stun1.l.google.com:19302' }] },
       })
 
       userAgent.on('registered', () => {
@@ -332,6 +333,7 @@ export default function SoftPhonePage() {
     </div>
   )
 }
+
 
 
 
