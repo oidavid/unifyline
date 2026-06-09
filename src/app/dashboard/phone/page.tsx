@@ -86,6 +86,8 @@ export default function SoftPhonePage() {
         register: true,
         register_expires: 300,
         session_timers: false,
+        contact_uri: `sip:unifyline-browser-${extension}@${SIP_SERVER};transport=ws`,
+        instance_id: `unifyline-browser-${extension}`,
       })
 
       userAgent.on('registered', () => setRegistered(true))
@@ -389,3 +391,4 @@ export default function SoftPhonePage() {
     </div>
   )
 }
+
