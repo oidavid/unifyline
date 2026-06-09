@@ -86,8 +86,7 @@ export default function SoftPhonePage() {
         register: true,
         register_expires: 300,
         session_timers: false,
-        contact_uri: `sip:unifyline-browser-${extension}@${SIP_SERVER};transport=ws`,
-        instance_id: `00000000-0000-4000-9000-$($extension.toString().padStart(12, '0'))`,
+
       })
 
       userAgent.on('registered', () => setRegistered(true))
