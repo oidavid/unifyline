@@ -33,6 +33,45 @@ function patchedCall<T>(fn: () => T): T {
   }
 }
 
+// Generate a stable browser-specific ringtone using Web Audio API
+function createRingtone(ctx: AudioContext): { start: () => void; stop: () => void } {
+  let interval: ReturnType<typeof setInterval> | null = null
+  let oscillators: OscillatorNode[] = []
+
+  function ring() {
+    oscillators.forEach(o => { try { o.stop() } catch {} })
+    oscillators = []
+
+    const freqs = [440, 480]
+    freqs.forEach(freq => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.frequency.value = freq
+      osc.type = 'sine'
+      gain.gain.setValueAtTime(0.15, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.4)
+      oscillators.push(osc)
+    })
+  }
+
+  return {
+    start() {
+      ring()
+      interval = setInterval(ring, 1200)
+    },
+    stop() {
+      if (interval) clearInterval(interval)
+      interval = null
+      oscillators.forEach(o => { try { o.stop() } catch {} })
+      oscillators = []
+    }
+  }
+}
+
 export default function SoftPhonePage() {
   const [callState, setCallState] = useState<CallState>('idle')
   const [dialNumber, setDialNumber] = useState('')
@@ -44,12 +83,13 @@ export default function SoftPhonePage() {
   const [registered, setRegistered] = useState(false)
   const [recentCalls, setRecentCalls] = useState<any[]>([])
   const [showSettings, setShowSettings] = useState(false)
-  const [showDtmf, setShowDtmf] = useState(false)
   const [ua, setUa] = useState<any>(null)
   const [currentCall, setCurrentCall] = useState<any>(null)
   const timerRef = useRef<any>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const currentCallRef = useRef<any>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const ringtoneRef = useRef<{ start: () => void; stop: () => void } | null>(null)
   const supabase = createClient()
 
   useEffect(() => { loadRecentCalls() }, [])
@@ -60,15 +100,52 @@ export default function SoftPhonePage() {
     } else {
       clearInterval(timerRef.current)
       setCallDuration(0)
-      setShowDtmf(false)
     }
     return () => clearInterval(timerRef.current)
   }, [callState])
 
+  // Start/stop ringtone based on call state
+  useEffect(() => {
+    if (callState === 'incoming') {
+      startRingtone()
+    } else {
+      stopRingtone()
+    }
+  }, [callState])
+
+  function startRingtone() {
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+      }
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume()
+      }
+      ringtoneRef.current = createRingtone(audioCtxRef.current)
+      ringtoneRef.current.start()
+    } catch (e) {
+      console.warn('[Ringtone] failed to start:', e)
+    }
+  }
+
+  function stopRingtone() {
+    try {
+      ringtoneRef.current?.stop()
+      ringtoneRef.current = null
+    } catch (e) {
+      console.warn('[Ringtone] failed to stop:', e)
+    }
+  }
+
   async function loadRecentCalls() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const { data } = await supabase.from('call_detail_records').select('*').eq('account_id', user.id).order('created_at', { ascending: false }).limit(8)
+    const { data } = await supabase
+      .from('call_detail_records')
+      .select('*')
+      .eq('account_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(8)
     setRecentCalls(data || [])
   }
 
@@ -86,10 +163,24 @@ export default function SoftPhonePage() {
         register: true,
         register_expires: 300,
         session_timers: false,
-
       })
 
-      userAgent.on('registered', () => setRegistered(true))
+      // Ghost-registration fix: on first register, flush all stale contacts
+      // then re-register so this browser is the only active contact for this extension.
+      let staleContactsFlushed = false
+      userAgent.on('registered', () => {
+        setRegistered(true)
+        if (!staleContactsFlushed) {
+          staleContactsFlushed = true
+          try {
+            userAgent.unregister({ all: true })
+            setTimeout(() => {
+              try { userAgent.register() } catch {}
+            }, 800)
+          } catch {}
+        }
+      })
+
       userAgent.on('unregistered', () => setRegistered(false))
       userAgent.on('registrationFailed', () => setRegistered(false))
 
@@ -100,8 +191,19 @@ export default function SoftPhonePage() {
           setCallState('incoming')
           setCurrentCall(session)
           currentCallRef.current = session
-          session.on('ended', () => { setCallState('idle'); setCurrentCall(null); currentCallRef.current = null; loadRecentCalls() })
-          session.on('failed', () => { setCallState('idle'); setCurrentCall(null); currentCallRef.current = null })
+          session.on('ended', () => {
+            stopRingtone()
+            setCallState('idle')
+            setCurrentCall(null)
+            currentCallRef.current = null
+            loadRecentCalls()
+          })
+          session.on('failed', () => {
+            stopRingtone()
+            setCallState('idle')
+            setCurrentCall(null)
+            currentCallRef.current = null
+          })
         }
       })
 
@@ -127,125 +229,143 @@ export default function SoftPhonePage() {
 
   function handleCall() {
     if (!dialNumber || !ua) return
-
     const target = `sip:${dialNumber}@${SIP_SERVER}`
-
-    // Patch RTCPeerConnection so TURN servers are set at creation time
     const session = patchedCall(() => ua.call(target, {
       mediaConstraints: { audio: true, video: false },
       rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false },
       sessionTimersExpires: 120,
     }))
-
     setCurrentCall(session)
     currentCallRef.current = session
     setCallState('connecting')
 
     session.on('peerconnection', (data: any) => {
       const pc = data.peerconnection
-      console.log('[ICE] servers:', pc.getConfiguration?.()?.iceServers?.length)
       pc.addEventListener('icecandidate', (e: any) => {
-        console.log('[ICE] candidate type:', e.candidate?.type, e.candidate?.address)
-      })
-      pc.addEventListener('connectionstatechange', () => {
-        console.log('[ICE] connection state:', pc.connectionState)
+        console.log('[ICE] candidate type:', e.candidate?.type)
       })
     })
-
     session.on('progress', () => setCallState('ringing'))
-    session.on('accepted', () => { setCallState('active'); attachAudio(session) })
-    session.on('confirmed', () => { setCallState('active'); attachAudio(session) })
-    session.on('ended', () => { setCallState('idle'); setCurrentCall(null); currentCallRef.current = null; loadRecentCalls() })
-    session.on('failed', (e: any) => {
-      console.error('[SIP] failed:', e?.cause, e?.message)
-      setCallState('idle'); setCurrentCall(null); currentCallRef.current = null
+    session.on('accepted', () => {
+      setCallState('active')
+      attachAudio(session)
     })
-  }
-
-  function handleHangup() {
-    try { currentCallRef.current?.terminate() } catch(e) {}
-    setCallState('idle'); setDialNumber(''); setMuted(false)
-    setCurrentCall(null); currentCallRef.current = null
+    session.on('confirmed', () => {
+      setCallState('active')
+      attachAudio(session)
+    })
+    session.on('ended', () => {
+      setCallState('idle')
+      setCurrentCall(null)
+      currentCallRef.current = null
+      loadRecentCalls()
+    })
+    session.on('failed', () => {
+      setCallState('idle')
+      setCurrentCall(null)
+      currentCallRef.current = null
+    })
   }
 
   function handleAnswer() {
-    if (!currentCallRef.current) return
-    // Patch RTCPeerConnection for the answer too
-    patchedCall(() =>
-      currentCallRef.current.answer({ mediaConstraints: { audio: true, video: false } })
-    )
+    const session = currentCallRef.current
+    if (!session) return
+    stopRingtone()
+    patchedCall(() => session.answer({
+      mediaConstraints: { audio: true, video: false },
+    }))
     setCallState('active')
-    setTimeout(() => attachAudio(currentCallRef.current), 500)
+    session.on('confirmed', () => attachAudio(session))
+    session.connection?.addEventListener('track', () => attachAudio(session))
+  }
+
+  function handleHangup() {
+    stopRingtone()
+    const session = currentCallRef.current
+    if (session) {
+      try { session.terminate() } catch {}
+    }
+    setCallState('idle')
+    setCurrentCall(null)
+    currentCallRef.current = null
+  }
+
+  function toggleMute() {
+    const session = currentCallRef.current
+    if (!session) return
+    if (muted) {
+      session.unmute({ audio: true })
+    } else {
+      session.mute({ audio: true })
+    }
+    setMuted(!muted)
   }
 
   function sendDtmf(tone: string) {
     try {
-      currentCallRef.current?.sendDTMF(tone, { duration: 160, interToneGap: 1200 })
-      console.log('[DTMF]', tone)
-    } catch(e) { console.warn('[DTMF] error:', e) }
+      currentCallRef.current?.sendDTMF(tone)
+    } catch (e) {
+      console.warn('[DTMF] error:', e)
+    }
   }
 
-  function toggleMute() {
-    if (!currentCallRef.current) return
-    muted ? currentCallRef.current.unmute() : currentCallRef.current.mute()
-    setMuted(!muted)
-  }
+  const fmt = (s: number) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
 
-  const fmt = (s: number) => `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`
-
-  const extConfigs = [
-    { ext: '101', label: 'Sales', pass: 'UL101secure!' },
-    { ext: '102', label: 'Support', pass: 'UL102secure!' },
-    { ext: '103', label: 'Management', pass: 'UL103secure!' },
-    { ext: '104', label: 'CEO Direct', pass: 'UL104secure!' },
+  const EXTENSION_PRESETS = [
+    { ext: '101', label: 'Sales', pw: 'UL101secure!' },
+    { ext: '102', label: 'Support', pw: 'UL102secure!' },
+    { ext: '103', label: 'Management', pw: 'UL103secure!' },
+    { ext: '104', label: 'CEO Direct', pw: 'UL104secure!' },
   ]
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <audio ref={audioRef} autoPlay />
-      <div className="mb-6 flex items-center justify-between">
+
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Phone</h2>
-          <p className="text-gray-500 mt-1">Browser-based softphone powered by WebRTC</p>
+          <h2 className="text-xl font-bold text-gray-900">Phone</h2>
+          <p className="text-sm text-gray-500">Browser-based softphone powered by WebRTC</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${registered ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-            {registered ? <Wifi size={12}/> : <WifiOff size={12}/>}
-            {registered ? `Ext ${extension} registered` : 'Not connected'}
+          <div className={`flex items-center gap-1.5 text-sm ${registered ? 'text-green-600' : 'text-gray-400'}`}>
+            {registered ? <Wifi size={14}/> : <WifiOff size={14}/>}
+            {registered ? 'Connected' : 'Not connected'}
           </div>
-          <button onClick={() => setShowSettings(!showSettings)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs hover:bg-gray-50">Settings</button>
-          {!registered && (
-            <button onClick={initSIP} className="px-4 py-1.5 bg-[#0C2C68] text-white rounded-lg text-xs font-semibold hover:bg-[#1A56C4]">Connect</button>
-          )}
+          <button onClick={() => setShowSettings(!showSettings)}
+            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">
+            Settings
+          </button>
+          <button onClick={() => { if (ua) { ua.stop(); setUa(null); setRegistered(false) } setTimeout(initSIP, 500) }}
+            className="px-4 py-1.5 text-sm bg-[#0C2C68] text-white rounded-lg hover:bg-[#1A56C4] font-medium">
+            {registered ? 'Reconnect' : 'Connect'}
+          </button>
         </div>
       </div>
 
       {showSettings && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 shadow-sm">
           <h3 className="font-semibold text-gray-900 mb-4">SIP Connection Settings</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            {extConfigs.map(cfg => (
-              <button key={cfg.ext} onClick={() => { setExtension(cfg.ext); setPassword(cfg.pass) }}
-                className={`p-3 rounded-xl border text-left transition ${extension === cfg.ext ? 'border-[#0C2C68] bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                <p className="text-xs font-bold text-[#0C2C68]">Ext. {cfg.ext}</p>
-                <p className="text-xs text-gray-500">{cfg.label}</p>
+          <div className="grid grid-cols-4 gap-3 mb-4">
+            {EXTENSION_PRESETS.map(p => (
+              <button key={p.ext}
+                onClick={() => { setExtension(p.ext); setPassword(p.pw) }}
+                className={`p-3 rounded-lg border-2 text-left transition ${extension === p.ext ? 'border-[#0C2C68] bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                <p className="font-semibold text-sm text-[#0C2C68]">Ext. {p.ext}</p>
+                <p className="text-xs text-gray-500">{p.label}</p>
               </button>
             ))}
           </div>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">Extension</label>
-              <input value={extension} onChange={e => setExtension(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-wide">Extension</label>
+              <input value={extension} onChange={e => setExtension(e.target.value)}
+                className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0C2C68]"/>
             </div>
-            <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">Password</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"/>
-            </div>
-            <div className="flex items-end">
-              <button onClick={() => { if (ua) { ua.stop(); setUa(null); setRegistered(false) } setTimeout(initSIP, 500) }}
-                className="px-4 py-2 bg-[#0C2C68] text-white rounded-lg text-sm font-semibold hover:bg-[#1A56C4]">
-                Connect
-              </button>
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-wide">Password</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0C2C68]"/>
             </div>
           </div>
         </div>
@@ -256,7 +376,10 @@ export default function SoftPhonePage() {
           <div className="bg-[#0C2C68] rounded-2xl overflow-hidden shadow-2xl">
             <div className="px-6 pt-6 pb-4">
               <div className="flex items-center justify-between mb-4">
-                <div><p className="text-blue-300 text-xs font-medium">Your Extension</p><p className="text-white font-bold text-lg">Ext. {extension}</p></div>
+                <div>
+                  <p className="text-blue-300 text-xs font-medium">Your Extension</p>
+                  <p className="text-white font-bold text-lg">Ext. {extension}</p>
+                </div>
                 <div className={`flex items-center gap-1 ${registered ? 'text-green-400' : 'text-gray-400'}`}>
                   {registered ? <Wifi size={12}/> : <WifiOff size={12}/>}
                   <span className="text-xs">{registered ? 'Live' : 'Offline'}</span>
@@ -267,7 +390,13 @@ export default function SoftPhonePage() {
                 {callState === 'connecting' && <div className="text-center"><p className="text-white text-xl font-mono">{dialNumber}</p><p className="text-yellow-400 text-xs mt-1 animate-pulse">Connecting...</p></div>}
                 {callState === 'ringing' && <div className="text-center"><p className="text-white text-xl font-mono">{dialNumber}</p><p className="text-blue-300 text-xs mt-1 animate-pulse">Ringing...</p></div>}
                 {callState === 'active' && <div className="text-center"><p className="text-white text-xl font-mono">{dialNumber || incomingFrom}</p><p className="text-green-400 text-sm font-bold mt-1">{fmt(callDuration)}</p></div>}
-                {callState === 'incoming' && <div className="text-center"><p className="text-blue-300 text-xs animate-pulse">Incoming Call</p><p className="text-white text-lg font-bold mt-1">{incomingFrom}</p></div>}
+                {callState === 'incoming' && (
+                  <div className="text-center">
+                    <p className="text-blue-300 text-xs animate-pulse">📞 Incoming Call</p>
+                    <p className="text-white text-lg font-bold mt-1">{incomingFrom}</p>
+                    <p className="text-blue-300 text-xs mt-1 animate-pulse">Ringing...</p>
+                  </div>
+                )}
               </div>
             </div>
             <div className="px-6 pb-6">
@@ -283,10 +412,12 @@ export default function SoftPhonePage() {
 
               {callState === 'idle' && (
                 <div className="flex gap-3">
-                  <button onClick={handleCall} disabled={!dialNumber || !registered} className="flex-1 bg-green-500 hover:bg-green-400 disabled:opacity-40 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition">
+                  <button onClick={handleCall} disabled={!dialNumber || !registered}
+                    className="flex-1 bg-green-500 hover:bg-green-400 disabled:opacity-40 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition">
                     <Phone size={20}/>Call
                   </button>
-                  <button onClick={() => setDialNumber(d => d.slice(0,-1))} className="bg-white/10 hover:bg-white/20 text-white px-4 rounded-xl transition">
+                  <button onClick={() => setDialNumber(d => d.slice(0,-1))}
+                    className="bg-white/10 hover:bg-white/20 text-white px-4 rounded-xl transition">
                     <Delete size={18}/>
                   </button>
                 </div>
@@ -294,8 +425,14 @@ export default function SoftPhonePage() {
 
               {callState === 'incoming' && (
                 <div className="flex gap-3">
-                  <button onClick={handleAnswer} className="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2"><Phone size={20}/>Answer</button>
-                  <button onClick={handleHangup} className="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2"><PhoneOff size={20}/>Decline</button>
+                  <button onClick={handleAnswer}
+                    className="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 animate-pulse">
+                    <Phone size={20}/>Answer
+                  </button>
+                  <button onClick={handleHangup}
+                    className="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2">
+                    <PhoneOff size={20}/>Decline
+                  </button>
                 </div>
               )}
 
@@ -303,7 +440,8 @@ export default function SoftPhonePage() {
                 <div className="space-y-3">
                   {callState === 'active' && (
                     <div className="flex gap-2">
-                      <button onClick={toggleMute} className={`flex-1 py-3 rounded-xl text-xs font-medium flex items-center justify-center gap-1 ${muted ? 'bg-red-500 text-white' : 'bg-white/10 text-white'}`}>
+                      <button onClick={toggleMute}
+                        className={`flex-1 py-3 rounded-xl text-xs font-medium flex items-center justify-center gap-1 ${muted ? 'bg-red-500 text-white' : 'bg-white/10 text-white'}`}>
                         {muted ? <MicOff size={14}/> : <Mic size={14}/>}{muted ? 'Unmute' : 'Mute'}
                       </button>
                       <button className="flex-1 py-3 rounded-xl text-xs font-medium flex items-center justify-center gap-1 bg-white/10 text-white">
@@ -311,7 +449,8 @@ export default function SoftPhonePage() {
                       </button>
                     </div>
                   )}
-                  <button onClick={handleHangup} className="w-full bg-red-500 hover:bg-red-400 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2">
+                  <button onClick={handleHangup}
+                    className="w-full bg-red-500 hover:bg-red-400 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2">
                     <PhoneOff size={20}/>{callState === 'active' ? 'End Call' : 'Cancel'}
                   </button>
                 </div>
@@ -319,7 +458,9 @@ export default function SoftPhonePage() {
 
               <div className="mt-4 bg-white/5 rounded-xl px-4 py-3 flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${registered ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}/>
-                <span className="text-blue-200 text-xs">{registered ? 'WebRTC Connected · SIP over WebSocket' : 'Click Connect to activate'}</span>
+                <span className="text-blue-200 text-xs">
+                  {registered ? `Ext ${extension} · WebRTC Connected` : 'Click Connect to activate'}
+                </span>
               </div>
             </div>
           </div>
@@ -328,7 +469,8 @@ export default function SoftPhonePage() {
             <h3 className="font-semibold text-gray-900 text-sm mb-3">Ring Groups</h3>
             <div className="space-y-2">
               {[{name:'All Staff',num:'2000'},{name:'Sales Team',num:'2001'},{name:'Support',num:'2002'},{name:'Management',num:'2003'}].map(({name,num})=>(
-                <button key={num} onClick={() => setDialNumber(num)} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition text-left">
+                <button key={num} onClick={() => setDialNumber(num)}
+                  className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition text-left">
                   <div className="w-2.5 h-2.5 rounded-full bg-blue-400"/>
                   <div className="flex-1"><p className="text-sm font-medium text-gray-900">{name}</p></div>
                   <span className="text-xs text-gray-400 font-mono">{num}</span>
@@ -358,7 +500,8 @@ export default function SoftPhonePage() {
                     <p className="text-xs text-gray-500">{cdr.duration_sec}s</p>
                     <p className="text-xs text-gray-400">{new Date(cdr.created_at).toLocaleTimeString()}</p>
                   </div>
-                  <button onClick={() => setDialNumber(cdr.from_number)} className="p-2 text-gray-400 hover:text-[#0C2C68] hover:bg-blue-50 rounded-lg transition flex-shrink-0">
+                  <button onClick={() => setDialNumber(cdr.from_number)}
+                    className="p-2 text-gray-400 hover:text-[#0C2C68] hover:bg-blue-50 rounded-lg transition flex-shrink-0">
                     <Phone size={14}/>
                   </button>
                 </div>
@@ -374,7 +517,12 @@ export default function SoftPhonePage() {
           <div className="bg-gradient-to-r from-[#0C2C68] to-[#1A56C4] rounded-xl p-5 text-white">
             <h4 className="font-semibold mb-3">Your Extensions</h4>
             <div className="grid grid-cols-2 gap-3">
-              {[{ext:'101',label:'Sales',did:'404-592-9690'},{ext:'102',label:'Support',did:'404-592-5562'},{ext:'103',label:'Management',did:'404-592-5562'},{ext:'104',label:'CEO Direct',did:'678-460-5180'}].map(({ext,label,did})=>(
+              {[
+                {ext:'101',label:'Sales',did:'404-592-9690'},
+                {ext:'102',label:'Support',did:'404-592-5562'},
+                {ext:'103',label:'Management',did:'404-592-5562'},
+                {ext:'104',label:'CEO Direct',did:'678-460-5180'}
+              ].map(({ext,label,did})=>(
                 <div key={ext} className="bg-white/10 rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-mono font-bold text-sm">Ext. {ext}</span>
@@ -390,7 +538,3 @@ export default function SoftPhonePage() {
     </div>
   )
 }
-
-
-
-
