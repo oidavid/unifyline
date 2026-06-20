@@ -80,6 +80,7 @@ export default function SoftPhonePage() {
   const [incomingFrom, setIncomingFrom] = useState('')
   const [extension, setExtension] = useState('101')
   const [password, setPassword] = useState('UL101secure!')
+  const [sipDomain, setSipDomain] = useState(SIP_SERVER)
   const [registered, setRegistered] = useState(false)
   const [recentCalls, setRecentCalls] = useState<any[]>([])
   const [showSettings, setShowSettings] = useState(false)
@@ -157,7 +158,7 @@ export default function SoftPhonePage() {
       const socket = new JsSIP.WebSocketInterface(WS_URL)
       const userAgent = new JsSIP.UA({
         sockets: [socket],
-        uri: `sip:${extension}@${SIP_SERVER}`,
+        uri: `sip:${extension}@${sipDomain}`,
         password,
         display_name: `Ext ${extension}`,
         register: true,
@@ -229,7 +230,7 @@ export default function SoftPhonePage() {
 
   function handleCall() {
     if (!dialNumber || !ua) return
-    const target = `sip:${dialNumber}@${SIP_SERVER}`
+    const target = `sip:${dialNumber}@${sipDomain}`
     const session = patchedCall(() => ua.call(target, {
       mediaConstraints: { audio: true, video: false },
       rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false },
@@ -312,10 +313,11 @@ export default function SoftPhonePage() {
   const fmt = (s: number) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
 
   const EXTENSION_PRESETS = [
-    { ext: '101', label: 'Sales', pw: 'UL101secure!' },
-    { ext: '102', label: 'Support', pw: 'UL102secure!' },
-    { ext: '103', label: 'Management', pw: 'UL103secure!' },
-    { ext: '104', label: 'CEO Direct', pw: 'UL104secure!' },
+    { ext: '101', label: 'Sales', pw: 'UL101secure!', domain: SIP_SERVER },
+    { ext: '102', label: 'Support', pw: 'UL102secure!', domain: SIP_SERVER },
+    { ext: '103', label: 'Management', pw: 'UL103secure!', domain: SIP_SERVER },
+    { ext: '104', label: 'CEO Direct', pw: 'UL104secure!', domain: SIP_SERVER },
+    { ext: '201', label: 'MTI Test (isolated tenant)', pw: 'MTI201secure!', domain: 'mti.unifyline.local' },
   ]
 
   return (
@@ -349,14 +351,14 @@ export default function SoftPhonePage() {
           <div className="grid grid-cols-4 gap-3 mb-4">
             {EXTENSION_PRESETS.map(p => (
               <button key={p.ext}
-                onClick={() => { setExtension(p.ext); setPassword(p.pw) }}
+                onClick={() => { setExtension(p.ext); setPassword(p.pw); setSipDomain(p.domain) }}
                 className={`p-3 rounded-lg border-2 text-left transition ${extension === p.ext ? 'border-[#0C2C68] bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
                 <p className="font-semibold text-sm text-[#0C2C68]">Ext. {p.ext}</p>
                 <p className="text-xs text-gray-500">{p.label}</p>
               </button>
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="text-xs text-gray-500 uppercase tracking-wide">Extension</label>
               <input value={extension} onChange={e => setExtension(e.target.value)}
@@ -365,6 +367,11 @@ export default function SoftPhonePage() {
             <div>
               <label className="text-xs text-gray-500 uppercase tracking-wide">Password</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0C2C68]"/>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 uppercase tracking-wide">SIP Domain</label>
+              <input value={sipDomain} onChange={e => setSipDomain(e.target.value)}
                 className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0C2C68]"/>
             </div>
           </div>
