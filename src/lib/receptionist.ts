@@ -100,7 +100,7 @@ ${config.knowledge_base ? `BUSINESS INFORMATION:\n${config.knowledge_base}` : ''
 CRITICAL: You are on a PHONE CALL. Maximum 2 short sentences per response. Natural spoken language only. No bullet points. No offers to transfer or hold.`
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 150,
     system: systemPrompt,
     messages: conversation,
@@ -160,7 +160,7 @@ export async function generateCallSummary(conversation: ConversationMessage[]): 
   if (conversation.length === 0) return 'No conversation recorded.'
   const transcriptText = conversation.map(m => `${m.role === 'user' ? 'Caller' : 'AI'}: ${m.content}`).join('\n')
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 200,
     messages: [{ role: 'user', content: `Summarize this phone call in 2-3 sentences. Who called, what did they need, what action is required?\n\n${transcriptText}` }],
   })
