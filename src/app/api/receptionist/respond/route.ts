@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     const contentType = req.headers.get('content-type') || ''
     let callUuid = '', callerNumber = 'Unknown', action = 'speak'
     let audioBuffer: ArrayBuffer | null = null
-    let callbackNumber = '', sayText = '', callerName = '', callReason = ''
+    let callbackNumber = '', sayText = '', callerName = '', callReason = '', destinationNumber = ''
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData()
@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
       action = formData.get('action') as string || 'speak'
       callbackNumber = formData.get('callback_number') as string || ''
       sayText = formData.get('text') as string || ''
+      destinationNumber = formData.get('destination_number') as string || ''
       const audioFile = formData.get('audio') as File | null
       if (audioFile && audioFile.size > 0) audioBuffer = await audioFile.arrayBuffer()
     } else {
@@ -66,12 +67,13 @@ export async function POST(req: NextRequest) {
       sayText = body.text || ''
       callerName = body.caller_name || ''
       callReason = body.reason || ''
+      destinationNumber = body.destination_number || ''
       if (body.audio_b64) audioBuffer = Buffer.from(body.audio_b64, 'base64').buffer as ArrayBuffer
     }
 
-    console.log(`[API] ${callUuid} action=${action} caller=${callerNumber}`)
+    console.log(`[API] ${callUuid} action=${action} caller=${callerNumber} did=${destinationNumber}`)
 
-    const config = await getActiveReceptionistConfig()
+    const config = await getActiveReceptionistConfig(destinationNumber || undefined)
     if (!config) throw new Error('No receptionist config found')
 
     // GREET
@@ -157,7 +159,7 @@ export async function POST(req: NextRequest) {
 
     // END - save CDR
     if (action === 'end') {
-      const accountId = await getDefaultAccountId() || ''
+      const accountId = await getDefaultAccountId(destinationNumber || undefined) || ''
       const conversation = await getConversation(callUuid)
 
       let summary = ''
