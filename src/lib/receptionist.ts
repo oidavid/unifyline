@@ -5,9 +5,53 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
 export interface ConversationMessage { role: 'user' | 'assistant'; content: string }
-export interface ReceptionistConfig { system_prompt: string; greeting_text: string; knowledge_base: string; active: boolean }
+export interface ReceptionistConfig {
+  system_prompt: string
+  greeting_text: string
+  knowledge_base: string
+  active: boolean
+  tenant_account_id?: string | null
+}
 
-export async function getActiveReceptionistConfig(): Promise<ReceptionistConfig | null> {
+/**
+ * Look up the AI Receptionist config for a specific account by the DID that
+ * was dialed. Returns null if the DID isn't registered to any account, so
+ * callers can fall back to the legacy default behavior.
+ */
+async function getConfigByDid(didNumber: string): Promise<ReceptionistConfig | null> {
+  const normalizedDid = didNumber.replace(/\D/g, '').replace(/^1/, '')
+  const { data: phoneRow } = await supabase
+    .from('account_phone_numbers')
+    .select('account_id')
+    .eq('did_number', normalizedDid)
+    .single()
+
+  if (!phoneRow?.account_id) return null
+
+  const { data: configRow } = await supabase
+    .from('ai_receptionist_config')
+    .select('*')
+    .eq('tenant_account_id', phoneRow.account_id)
+    .eq('active', true)
+    .limit(1)
+    .single()
+
+  return configRow || null
+}
+
+/**
+ * Get the AI Receptionist config for an inbound call. If a DID is provided
+ * and it's registered to a tenant account with its own config, that
+ * tenant-specific config is used. Otherwise falls back to the original
+ * single "active" config behavior (legacy/default), and finally to a
+ * hardcoded baseline if nothing is configured at all.
+ */
+export async function getActiveReceptionistConfig(didNumber?: string): Promise<ReceptionistConfig | null> {
+  if (didNumber) {
+    const tenantConfig = await getConfigByDid(didNumber)
+    if (tenantConfig) return tenantConfig
+  }
+
   const { data, error } = await supabase.from('ai_receptionist_config').select('*').eq('active', true).limit(1).single()
   if (error || !data) {
     return {
@@ -31,8 +75,19 @@ CRITICAL RULES:
   return data
 }
 
-export async function getDefaultAccountId(): Promise<string | null> {
-  // Get the first user account to associate inbound calls with
+export async function getDefaultAccountId(didNumber?: string): Promise<string | null> {
+  if (didNumber) {
+    const normalizedDid = didNumber.replace(/\D/g, '').replace(/^1/, '')
+    const { data: phoneRow } = await supabase
+      .from('account_phone_numbers')
+      .select('account_id')
+      .eq('did_number', normalizedDid)
+      .single()
+    if (phoneRow?.account_id) return phoneRow.account_id
+  }
+
+  // Fallback: legacy behavior - first active config's account_id (old column,
+  // kept for backward compatibility with existing call records).
   const { data } = await supabase.from('ai_receptionist_config').select('account_id').eq('active', true).limit(1).single()
   return data?.account_id || null
 }
