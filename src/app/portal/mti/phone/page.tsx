@@ -334,7 +334,7 @@ export default function MTIPortalPhone() {
           </div>
         </header>
 
-        <main style={{ padding: '24px', height: '600px', overflowY: 'auto' }}>
+        <main style={{ padding: '24px', height: '565px', overflowY: 'auto' }}>
         {activeTab === 'keypad' && (
           <div style={{ maxWidth: '380px', margin: '0 auto' }}>
             <div style={{ background: PANEL, borderRadius: '12px', padding: '24px', minHeight: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
@@ -469,7 +469,7 @@ export default function MTIPortalPhone() {
             style={{
               flex: 1, background: 'transparent', border: 'none', padding: '12px 0 10px',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-              color: activeTab === key ? GOLD : '#9C9484', cursor: 'pointer',
+              color: activeTab === key ? GOLD : '#D4CCB8', cursor: 'pointer',
             }}>
             <Icon size={20} />
             <span style={{ fontSize: '10px', letterSpacing: '0.02em' }}>{label}</span>
