@@ -18,6 +18,16 @@ const ICE_SERVERS = [
   { urls: 'turns:198.58.114.103:5349', username: 'unifyline', credential: 'UnifyTurn2026!' },
 ]
 
+const MTI_DIRECTORY: Record<string, string> = {
+  '201': 'Osas David',
+  '202': 'MTI Test Line',
+}
+
+function callerLabel(num: string): { name: string; sub: string } {
+  const known = MTI_DIRECTORY[num]
+  return known ? { name: known, sub: `Ext. ${num}` } : { name: num, sub: '' }
+}
+
 const GOLD = '#E8C26A'
 const GOLD_DARK = '#C9A23F'
 const BLACK = '#0A0A0A'
@@ -324,20 +334,34 @@ export default function MTIPortalPhone() {
           </div>
         </header>
 
-        <main style={{ padding: '24px', height: '460px', overflowY: 'auto' }}>
+        <main style={{ padding: '24px', height: '540px', overflowY: 'auto' }}>
         {activeTab === 'keypad' && (
           <div style={{ maxWidth: '380px', margin: '0 auto' }}>
             <div style={{ background: PANEL, borderRadius: '12px', padding: '24px', minHeight: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
               {callState === 'idle' && (<><div style={{ fontFamily: 'monospace', fontSize: '26px' }}>{dialNumber || 'Enter number'}</div><div style={{ color: GOLD, fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '6px' }}>Ready</div></>)}
               {callState === 'connecting' && (<><div style={{ fontFamily: 'monospace', fontSize: '26px' }}>{dialNumber}</div><div style={{ color: '#E0B85C', fontSize: '11px', marginTop: '6px' }}>Connecting…</div></>)}
               {callState === 'ringing' && (<><div style={{ fontFamily: 'monospace', fontSize: '26px' }}>{dialNumber}</div><div style={{ color: GOLD, fontSize: '11px', marginTop: '6px' }}>Ringing…</div></>)}
-              {callState === 'active' && (<><div style={{ fontFamily: 'monospace', fontSize: '26px' }}>{dialNumber || incomingFrom}</div><div style={{ color: '#7FAE8E', fontSize: '14px', fontWeight: 700, marginTop: '6px' }}>{fmt(callDuration)}</div></>)}
-              {callState === 'incoming' && (
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ color: GOLD, fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Incoming call</div>
-                  <div style={{ fontFamily: 'Georgia, serif', fontSize: '20px', marginTop: '4px' }}>{incomingFrom}</div>
-                </div>
-              )}
+              {callState === 'active' && (() => {
+                const target = dialNumber || incomingFrom
+                const { name, sub } = callerLabel(target)
+                return (
+                  <>
+                    <div style={{ fontFamily: 'Georgia, serif', fontSize: '22px' }}>{name}</div>
+                    {sub && <div style={{ fontSize: '11px', color: TAUPE, marginTop: '2px' }}>{sub}</div>}
+                    <div style={{ color: '#7FAE8E', fontSize: '14px', fontWeight: 700, marginTop: '6px' }}>{fmt(callDuration)}</div>
+                  </>
+                )
+              })()}
+              {callState === 'incoming' && (() => {
+                const { name, sub } = callerLabel(incomingFrom)
+                return (
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ color: GOLD, fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Incoming call</div>
+                    <div style={{ fontFamily: 'Georgia, serif', fontSize: '20px', marginTop: '4px' }}>{name}</div>
+                    {sub && <div style={{ fontSize: '11px', color: TAUPE, marginTop: '2px' }}>{sub}</div>}
+                  </div>
+                )
+              })()}
             </div>
 
             {callState === 'idle' && !showKeypadDuringCall && (
