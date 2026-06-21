@@ -18,12 +18,13 @@ const ICE_SERVERS = [
   { urls: 'turns:198.58.114.103:5349', username: 'unifyline', credential: 'UnifyTurn2026!' },
 ]
 
-const GOLD = '#D4B483'
+const GOLD = '#E8C26A'
+const GOLD_DARK = '#C9A23F'
 const BLACK = '#0A0A0A'
 const IVORY = '#F7F5F0'
 const INK = '#1C1C1C'
-const TAUPE = '#8A8378'
-const PANEL = '#15120D'
+const TAUPE = '#B8AE96'
+const PANEL = '#1C1813'
 
 function patchedCall<T>(fn: () => T): T {
   const NativePC = window.RTCPeerConnection
@@ -317,7 +318,7 @@ export default function MTIPortalPhone() {
               <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: TAUPE }}>Your Line</div>
               <div style={{ fontFamily: 'Georgia, serif', fontSize: '24px' }}>Ext. {extension}</div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#1F1B14', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', color: GOLD }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#2A2418', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', color: GOLD }}>
               <Wifi size={13} /> Live
             </div>
           </div>
@@ -344,17 +345,17 @@ export default function MTIPortalPhone() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
                   {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
                     <button key={key} onClick={() => setDialNumber(d => d + key)}
-                      style={{ ...btn('#1F1B14', '#FFFFFF'), padding: '18px 0', fontSize: '19px', fontWeight: 600 }}>
+                      style={{ ...btn('#2A2418', '#FFFFFF'), padding: '18px 0', fontSize: '19px', fontWeight: 600 }}>
                       {key}
                     </button>
                   ))}
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button onClick={handleCall} disabled={!dialNumber}
-                    style={{ ...btn(dialNumber ? GOLD : '#3A3328', BLACK), flex: 1, padding: '16px', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    style={{ ...btn(dialNumber ? GOLD : '#2A2418', dialNumber ? BLACK : '#8A8170'), flex: 1, padding: '16px', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     <Phone size={16} /> Call
                   </button>
-                  <button onClick={() => setDialNumber(d => d.slice(0, -1))} style={{ ...btn('#1F1B14', '#FFFFFF'), width: '54px' }}>
+                  <button onClick={() => setDialNumber(d => d.slice(0, -1))} style={{ ...btn('#2A2418', '#FFFFFF'), width: '54px' }}>
                     <Delete size={16} />
                   </button>
                 </div>
@@ -372,9 +373,9 @@ export default function MTIPortalPhone() {
               <div>
                 {callState === 'active' && !showKeypadDuringCall && (
                   <div style={{ display: 'flex', justifyContent: 'space-around', padding: '12px 0 24px' }}>
-                    <RoundButton icon={muted ? <MicOff size={22} /> : <Mic size={22} />} label={muted ? 'Unmute' : 'Mute'} bg={muted ? GOLD : '#1F1B14'} fg={muted ? BLACK : '#FFFFFF'} onClick={toggleMute} small />
-                    <RoundButton icon={<Hand size={22} />} label="Hold" bg="#1F1B14" fg="#5A5448" onClick={() => {}} small disabled />
-                    <RoundButton icon={speakerOn ? <Volume2 size={22} /> : <VolumeX size={22} />} label="Speaker" bg={!speakerOn ? GOLD : '#1F1B14'} fg={!speakerOn ? BLACK : '#FFFFFF'} onClick={toggleSpeaker} small />
+                    <RoundButton icon={muted ? <MicOff size={22} /> : <Mic size={22} />} label={muted ? 'Unmute' : 'Mute'} bg={muted ? GOLD : '#2A2418'} fg={muted ? BLACK : '#FFFFFF'} onClick={toggleMute} small />
+                    <RoundButton icon={<Hand size={22} />} label="Hold" bg="#2A2418" fg="#5A5448" onClick={() => {}} small disabled />
+                    <RoundButton icon={speakerOn ? <Volume2 size={22} /> : <VolumeX size={22} />} label="Speaker" bg={!speakerOn ? GOLD : '#2A2418'} fg={!speakerOn ? BLACK : '#FFFFFF'} onClick={toggleSpeaker} small />
                   </div>
                 )}
 
@@ -382,7 +383,7 @@ export default function MTIPortalPhone() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
                     {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
                       <button key={key} onClick={() => sendDtmf(key)}
-                        style={{ ...btn('#1F1B14', '#FFFFFF'), padding: '14px 0', fontSize: '17px', fontWeight: 600 }}>
+                        style={{ ...btn('#2A2418', '#FFFFFF'), padding: '14px 0', fontSize: '17px', fontWeight: 600 }}>
                         {key}
                       </button>
                     ))}
@@ -391,7 +392,7 @@ export default function MTIPortalPhone() {
 
                 {callState === 'active' && (
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-                    <RoundButton icon={<Grid3x3 size={20} />} label="Keypad" bg={showKeypadDuringCall ? GOLD : '#1F1B14'} fg={showKeypadDuringCall ? BLACK : '#FFFFFF'} onClick={() => setShowKeypadDuringCall(s => !s)} small />
+                    <RoundButton icon={<Grid3x3 size={20} />} label="Keypad" bg={showKeypadDuringCall ? GOLD : '#2A2418'} fg={showKeypadDuringCall ? BLACK : '#FFFFFF'} onClick={() => setShowKeypadDuringCall(s => !s)} small />
                   </div>
                 )}
 
@@ -416,7 +417,7 @@ export default function MTIPortalPhone() {
                       <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px' }}>{cdr.from_number}</div>
                       {cdr.ai_summary && <div style={{ fontSize: '12px', color: TAUPE, marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cdr.ai_summary}</div>}
                     </div>
-                    <div style={{ textAlign: 'right', fontSize: '11px', color: '#8A8378', flexShrink: 0 }}>
+                    <div style={{ textAlign: 'right', fontSize: '11px', color: '#C4BBA6', flexShrink: 0 }}>
                       <div>{cdr.duration_sec}s</div>
                       <div>{new Date(cdr.created_at).toLocaleTimeString()}</div>
                     </div>
@@ -444,7 +445,7 @@ export default function MTIPortalPhone() {
             style={{
               flex: 1, background: 'transparent', border: 'none', padding: '12px 0 10px',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-              color: activeTab === key ? GOLD : '#6B6458', cursor: 'pointer',
+              color: activeTab === key ? GOLD : '#9C9484', cursor: 'pointer',
             }}>
             <Icon size={20} />
             <span style={{ fontSize: '10px', letterSpacing: '0.02em' }}>{label}</span>
@@ -473,7 +474,7 @@ function ComingSoon({ icon: Icon, label, note }: { icon: any; label: string; not
   return (
     <div style={{ textAlign: 'center', padding: '80px 24px', color: '#5A5448' }}>
       <Icon size={32} style={{ opacity: 0.3, marginBottom: '12px' }} />
-      <div style={{ fontFamily: 'Georgia, serif', fontSize: '18px', color: '#8A8378', marginBottom: '6px' }}>{label}</div>
+      <div style={{ fontFamily: 'Georgia, serif', fontSize: '18px', color: '#C4BBA6', marginBottom: '6px' }}>{label}</div>
       <div style={{ fontSize: '13px' }}>{note}</div>
     </div>
   )
