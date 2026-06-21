@@ -324,7 +324,7 @@ export default function MTIPortalPhone() {
           </div>
         </header>
 
-        <main style={{ padding: '24px', minHeight: '420px' }}>
+        <main style={{ padding: '24px', height: '460px', overflowY: 'auto' }}>
         {activeTab === 'keypad' && (
           <div style={{ maxWidth: '380px', margin: '0 auto' }}>
             <div style={{ background: PANEL, borderRadius: '12px', padding: '24px', minHeight: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
