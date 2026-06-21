@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Delete, Wifi, Grid3x3, Clock, Voicemail, Users, Settings as SettingsIcon } from 'lucide-react'
+import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Delete, Wifi, Grid3x3, Clock, Voicemail, Users, Settings as SettingsIcon, Hand } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
 type CallState = 'idle' | 'connecting' | 'ringing' | 'active' | 'incoming'
@@ -68,6 +68,7 @@ function createRingtone(ctx: AudioContext): { start: () => void; stop: () => voi
 export default function MTIPortalPhone() {
   const [activeTab, setActiveTab] = useState<Tab>('keypad')
   const [callState, setCallState] = useState<CallState>('idle')
+  const [showKeypadDuringCall, setShowKeypadDuringCall] = useState(false)
   const [dialNumber, setDialNumber] = useState('')
   const [muted, setMuted] = useState(false)
   const [speakerOn, setSpeakerOn] = useState(true)
@@ -224,6 +225,7 @@ export default function MTIPortalPhone() {
     const session = currentCallRef.current
     if (session) { try { session.terminate() } catch {} }
     setCallState('idle')
+    setShowKeypadDuringCall(false)
     currentCallRef.current = null
   }
 
@@ -335,53 +337,65 @@ export default function MTIPortalPhone() {
               )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
-              {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
-                <button key={key} onClick={() => callState === 'active' ? sendDtmf(key) : setDialNumber(d => d + key)}
-                  style={{ ...btn('#1F1B14', '#FFFFFF'), padding: '18px 0', fontSize: '19px', fontWeight: 600 }}>
-                  {key}
-                </button>
-              ))}
-            </div>
-
-            {callState === 'idle' && (
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={handleCall} disabled={!dialNumber}
-                  style={{ ...btn(dialNumber ? GOLD : '#3A3328', BLACK), flex: 1, padding: '16px', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <Phone size={16} /> Call
-                </button>
-                <button onClick={() => setDialNumber(d => d.slice(0, -1))} style={{ ...btn('#1F1B14', '#FFFFFF'), width: '54px' }}>
-                  <Delete size={16} />
-                </button>
-              </div>
+            {callState === 'idle' && !showKeypadDuringCall && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+                  {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
+                    <button key={key} onClick={() => setDialNumber(d => d + key)}
+                      style={{ ...btn('#1F1B14', '#FFFFFF'), padding: '18px 0', fontSize: '19px', fontWeight: 600 }}>
+                      {key}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={handleCall} disabled={!dialNumber}
+                    style={{ ...btn(dialNumber ? GOLD : '#3A3328', BLACK), flex: 1, padding: '16px', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <Phone size={16} /> Call
+                  </button>
+                  <button onClick={() => setDialNumber(d => d.slice(0, -1))} style={{ ...btn('#1F1B14', '#FFFFFF'), width: '54px' }}>
+                    <Delete size={16} />
+                  </button>
+                </div>
+              </>
             )}
 
             {callState === 'incoming' && (
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={handleAnswer} style={{ ...btn(GOLD, BLACK), flex: 1, padding: '16px', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <Phone size={16} /> Answer
-                </button>
-                <button onClick={handleHangup} style={{ ...btn('#9A3F3F', '#FFFFFF'), flex: 1, padding: '16px', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <PhoneOff size={16} /> Decline
-                </button>
+              <div style={{ display: 'flex', justifyContent: 'space-around', padding: '20px 0' }}>
+                <RoundButton icon={<PhoneOff size={26} />} label="Decline" bg="#9A3F3F" onClick={handleHangup} />
+                <RoundButton icon={<Phone size={26} />} label="Answer" bg={GOLD} fg={BLACK} onClick={handleAnswer} />
               </div>
             )}
 
             {(callState === 'connecting' || callState === 'ringing' || callState === 'active') && (
               <div>
-                {callState === 'active' && (
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                    <button onClick={toggleMute} style={{ ...btn(muted ? GOLD : '#1F1B14', muted ? BLACK : '#FFFFFF'), flex: 1, padding: '13px', fontSize: '12px', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                      {muted ? <MicOff size={14} /> : <Mic size={14} />} {muted ? 'Unmute' : 'Mute'}
-                    </button>
-                    <button onClick={toggleSpeaker} style={{ ...btn(!speakerOn ? GOLD : '#1F1B14', !speakerOn ? BLACK : '#FFFFFF'), flex: 1, padding: '13px', fontSize: '12px', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                      {speakerOn ? <Volume2 size={14} /> : <VolumeX size={14} />} Speaker
-                    </button>
+                {callState === 'active' && !showKeypadDuringCall && (
+                  <div style={{ display: 'flex', justifyContent: 'space-around', padding: '12px 0 24px' }}>
+                    <RoundButton icon={muted ? <MicOff size={22} /> : <Mic size={22} />} label={muted ? 'Unmute' : 'Mute'} bg={muted ? GOLD : '#1F1B14'} fg={muted ? BLACK : '#FFFFFF'} onClick={toggleMute} small />
+                    <RoundButton icon={<Hand size={22} />} label="Hold" bg="#1F1B14" fg="#5A5448" onClick={() => {}} small disabled />
+                    <RoundButton icon={speakerOn ? <Volume2 size={22} /> : <VolumeX size={22} />} label="Speaker" bg={!speakerOn ? GOLD : '#1F1B14'} fg={!speakerOn ? BLACK : '#FFFFFF'} onClick={toggleSpeaker} small />
                   </div>
                 )}
-                <button onClick={handleHangup} style={{ ...btn('#9A3F3F', '#FFFFFF'), width: '100%', padding: '16px', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <PhoneOff size={16} /> {callState === 'active' ? 'Hang Up' : 'Cancel'}
-                </button>
+
+                {callState === 'active' && showKeypadDuringCall && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
+                    {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
+                      <button key={key} onClick={() => sendDtmf(key)}
+                        style={{ ...btn('#1F1B14', '#FFFFFF'), padding: '14px 0', fontSize: '17px', fontWeight: 600 }}>
+                        {key}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {callState === 'active' && (
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                    <RoundButton icon={<Grid3x3 size={20} />} label="Keypad" bg={showKeypadDuringCall ? GOLD : '#1F1B14'} fg={showKeypadDuringCall ? BLACK : '#FFFFFF'} onClick={() => setShowKeypadDuringCall(s => !s)} small />
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <RoundButton icon={<PhoneOff size={26} />} label={callState === 'active' ? 'End Call' : 'Cancel'} bg="#9A3F3F" onClick={handleHangup} />
+                </div>
               </div>
             )}
           </div>
@@ -436,6 +450,19 @@ export default function MTIPortalPhone() {
         ))}
       </nav>
     </div>
+  )
+}
+
+function RoundButton({ icon, label, bg, fg = '#FFFFFF', onClick, small, disabled }: { icon: React.ReactNode; label: string; bg: string; fg?: string; onClick: () => void; small?: boolean; disabled?: boolean }) {
+  const size = small ? 56 : 72
+  return (
+    <button onClick={disabled ? undefined : onClick} disabled={disabled}
+      style={{ background: 'transparent', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1 }}>
+      <div style={{ width: `${size}px`, height: `${size}px`, borderRadius: '50%', background: bg, color: fg, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
+        {icon}
+      </div>
+      <span style={{ fontSize: '11px', color: '#A8A296', letterSpacing: '0.02em' }}>{label}</span>
+    </button>
   )
 }
 
