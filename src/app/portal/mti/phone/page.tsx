@@ -306,22 +306,24 @@ export default function MTIPortalPhone() {
 
   // ---- Main app shell with tab navigation (mirrors mobile app structure) ----
   return (
-    <div style={{ minHeight: '100vh', background: BLACK, color: '#FFFFFF', fontFamily: 'Arial, sans-serif', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: IVORY, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 24px' }}>
       <audio ref={audioRef} autoPlay />
 
-      <header style={{ padding: '20px 24px 16px', borderBottom: `1px solid #2A241A` }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: TAUPE }}>Your Line</div>
-            <div style={{ fontFamily: 'Georgia, serif', fontSize: '24px' }}>Ext. {extension}</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#1F1B14', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', color: GOLD }}>
-            <Wifi size={13} /> Live
-          </div>
-        </div>
-      </header>
+      <div style={{ width: '100%', maxWidth: '420px', background: BLACK, color: '#FFFFFF', fontFamily: 'Arial, sans-serif', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 12px 32px rgba(0,0,0,0.18)', border: `1px solid #2A241A` }}>
 
-      <main style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+        <header style={{ padding: '20px 24px 16px', borderBottom: `1px solid #2A241A` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: TAUPE }}>Your Line</div>
+              <div style={{ fontFamily: 'Georgia, serif', fontSize: '24px' }}>Ext. {extension}</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#1F1B14', borderRadius: '20px', padding: '6px 14px', fontSize: '12px', color: GOLD }}>
+              <Wifi size={13} /> Live
+            </div>
+          </div>
+        </header>
+
+        <main style={{ padding: '24px', minHeight: '420px' }}>
         {activeTab === 'keypad' && (
           <div style={{ maxWidth: '380px', margin: '0 auto' }}>
             <div style={{ background: PANEL, borderRadius: '12px', padding: '24px', minHeight: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
@@ -449,6 +451,7 @@ export default function MTIPortalPhone() {
           </button>
         ))}
       </nav>
+      </div>
     </div>
   )
 }
