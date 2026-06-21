@@ -189,7 +189,7 @@ export default function MTIPortalPhone() {
 
       <main style={{ padding: '48px 24px', maxWidth: '440px', margin: '0 auto' }}>
         {!registered ? (
-          <div style={{ background: '#FFFFFF', border: '1px solid #E5E0D5', borderTop: `3px solid ${GOLD}`, padding: '36px 32px' }}>
+          <div style={{ background: '#FFFFFF', border: '1px solid #E5E0D5', borderTop: `3px solid ${GOLD}`, borderRadius: '10px', padding: '36px 32px', boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
             <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: TAUPE, fontWeight: 700, marginBottom: '8px' }}>
               Line Setup
             </div>
@@ -202,7 +202,7 @@ export default function MTIPortalPhone() {
               value={extension}
               onChange={e => setExtension(e.target.value)}
               placeholder="e.g. 201"
-              style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', fontSize: '15px', fontFamily: 'Arial, sans-serif', border: '1px solid #D8D2C4', marginBottom: '16px' }}
+              style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', fontSize: '15px', fontFamily: 'Arial, sans-serif', border: '1px solid #D8D2C4', borderRadius: '8px', marginBottom: '16px' }}
             />
 
             <label style={{ display: 'block', fontFamily: 'Arial, sans-serif', fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#5A5448', fontWeight: 700, marginBottom: '8px' }}>
@@ -212,15 +212,16 @@ export default function MTIPortalPhone() {
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', fontSize: '15px', fontFamily: 'Arial, sans-serif', border: '1px solid #D8D2C4', marginBottom: '24px' }}
+              style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px', fontSize: '15px', fontFamily: 'Arial, sans-serif', border: '1px solid #D8D2C4', borderRadius: '8px', marginBottom: '24px' }}
             />
 
             <button
               onClick={initSIP}
               disabled={connecting || !extension || !password}
               style={{
-                width: '100%', padding: '14px', background: connecting || !extension || !password ? '#CFC7B5' : BLACK,
-                color: GOLD, border: 'none', fontFamily: 'Arial, sans-serif', fontSize: '13px',
+                width: '100%', padding: '14px', background: connecting || !extension || !password ? '#E8E2D4' : BLACK,
+                color: connecting || !extension || !password ? '#A8A296' : GOLD, border: connecting || !extension || !password ? '1px solid #D8D2C4' : 'none',
+                borderRadius: '8px', fontFamily: 'Arial, sans-serif', fontSize: '13px',
                 letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700,
                 cursor: connecting || !extension || !password ? 'default' : 'pointer',
               }}
@@ -229,7 +230,7 @@ export default function MTIPortalPhone() {
             </button>
           </div>
         ) : (
-          <div style={{ background: BLACK, padding: '28px' }}>
+          <div style={{ background: BLACK, padding: '28px', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
                 <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: TAUPE }}>
@@ -240,8 +241,13 @@ export default function MTIPortalPhone() {
               <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '11px', color: GOLD }}>● Live</div>
             </div>
 
-            <div style={{ background: '#15120D', padding: '20px', minHeight: '90px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-              {callState === 'idle' && <div style={{ color: '#FFFFFF', fontFamily: 'monospace', fontSize: '20px' }}>{dialNumber || 'Enter number'}</div>}
+            <div style={{ background: '#15120D', padding: '20px', minHeight: '90px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', borderRadius: '8px' }}>
+              {callState === 'idle' && (
+                <>
+                  <div style={{ color: '#FFFFFF', fontFamily: 'monospace', fontSize: '24px', letterSpacing: '0.02em' }}>{dialNumber || 'Enter number'}</div>
+                  <div style={{ color: GOLD, fontFamily: 'Arial, sans-serif', fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '6px' }}>Ready</div>
+                </>
+              )}
               {callState === 'connecting' && <div style={{ color: GOLD, fontSize: '13px' }}>Connecting…</div>}
               {callState === 'ringing' && <div style={{ color: GOLD, fontSize: '13px' }}>Ringing…</div>}
               {callState === 'active' && <div style={{ color: '#FFFFFF', fontSize: '20px' }}>{fmt(callDuration)}</div>}
@@ -258,21 +264,47 @@ export default function MTIPortalPhone() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
                   {['1','2','3','4','5','6','7','8','9','*','0','#'].map(d => (
                     <button key={d} onClick={() => pressDigit(d)}
-                      style={{ padding: '14px 0', background: '#15120D', color: '#FFFFFF', border: 'none', fontSize: '17px', cursor: 'pointer' }}>
+                      style={{
+                        padding: '16px 0', background: '#1F1B14', color: '#FFFFFF', border: 'none',
+                        borderRadius: '10px', fontSize: '18px', fontWeight: 600, cursor: 'pointer',
+                        boxShadow: '0 2px 0 rgba(0,0,0,0.4)', transition: 'transform 0.05s',
+                      }}
+                      onMouseDown={e => (e.currentTarget.style.transform = 'translateY(1px)')}
+                      onMouseUp={e => (e.currentTarget.style.transform = 'translateY(0)')}
+                    >
                       {d}
                     </button>
                   ))}
                 </div>
-                <button onClick={handleCall}
-                  style={{ width: '100%', padding: '14px', background: GOLD, color: BLACK, border: 'none', fontFamily: 'Arial, sans-serif', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, cursor: 'pointer' }}>
-                  Call
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={handleCall} disabled={!dialNumber}
+                    style={{
+                      flex: 1, padding: '15px', background: dialNumber ? GOLD : '#3A3328', color: BLACK,
+                      border: 'none', borderRadius: '10px', fontFamily: 'Arial, sans-serif', fontSize: '13px',
+                      letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700,
+                      cursor: dialNumber ? 'pointer' : 'default',
+                      boxShadow: dialNumber ? '0 2px 0 rgba(0,0,0,0.4)' : 'none',
+                    }}>
+                    Call
+                  </button>
+                  <button
+                    onClick={() => setDialNumber(prev => prev.slice(0, -1))}
+                    disabled={!dialNumber}
+                    aria-label="Backspace"
+                    style={{
+                      width: '52px', padding: '15px 0', background: '#1F1B14', color: dialNumber ? '#FFFFFF' : '#5A5448',
+                      border: 'none', borderRadius: '10px', fontSize: '16px', cursor: dialNumber ? 'pointer' : 'default',
+                      boxShadow: '0 2px 0 rgba(0,0,0,0.4)',
+                    }}>
+                    ⌫
+                  </button>
+                </div>
               </>
             )}
 
             {callState === 'incoming' && (
               <button onClick={handleAnswer}
-                style={{ width: '100%', padding: '14px', background: GOLD, color: BLACK, border: 'none', fontFamily: 'Arial, sans-serif', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, cursor: 'pointer', marginBottom: '10px' }}>
+                style={{ width: '100%', padding: '14px', background: GOLD, color: BLACK, border: 'none', borderRadius: '10px', fontFamily: 'Arial, sans-serif', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, cursor: 'pointer', marginBottom: '10px', boxShadow: '0 2px 0 rgba(0,0,0,0.4)' }}>
                 Answer
               </button>
             )}
@@ -281,12 +313,12 @@ export default function MTIPortalPhone() {
               <div style={{ display: 'flex', gap: '10px' }}>
                 {callState === 'active' && (
                   <button onClick={toggleMute}
-                    style={{ flex: 1, padding: '12px', background: muted ? GOLD : '#15120D', color: muted ? BLACK : '#FFFFFF', border: 'none', fontFamily: 'Arial, sans-serif', fontSize: '12px', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                    style={{ flex: 1, padding: '12px', background: muted ? GOLD : '#1F1B14', color: muted ? BLACK : '#FFFFFF', border: 'none', borderRadius: '10px', fontFamily: 'Arial, sans-serif', fontSize: '12px', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', boxShadow: '0 2px 0 rgba(0,0,0,0.4)' }}>
                     {muted ? 'Unmute' : 'Mute'}
                   </button>
                 )}
                 <button onClick={handleHangup}
-                  style={{ flex: 1, padding: '12px', background: '#7A2F2F', color: '#FFFFFF', border: 'none', fontFamily: 'Arial, sans-serif', fontSize: '12px', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '12px', background: '#9A3F3F', color: '#FFFFFF', border: 'none', borderRadius: '10px', fontFamily: 'Arial, sans-serif', fontSize: '12px', letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', boxShadow: '0 2px 0 rgba(0,0,0,0.4)' }}>
                   Hang Up
                 </button>
               </div>
