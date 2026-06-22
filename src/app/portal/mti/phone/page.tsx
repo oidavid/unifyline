@@ -13,7 +13,7 @@ const MTI_ACCOUNT_ID = '5f646bc2-9bf3-47cb-9859-2871d4322e19'
 
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:198.58.114.103:3478' },
+  { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'turn:198.58.114.103:3478', username: 'unifyline', credential: 'UnifyTurn2026!' },
   { urls: 'turns:198.58.114.103:5349', username: 'unifyline', credential: 'UnifyTurn2026!' },
 ]
