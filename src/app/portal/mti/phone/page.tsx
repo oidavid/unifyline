@@ -39,7 +39,7 @@ const PANEL = '#1C1813'
 function patchedCall<T>(fn: () => T): T {
   const NativePC = window.RTCPeerConnection
   function PatchedPC(this: any, config: RTCConfiguration) {
-    return new NativePC({ ...config, iceServers: ICE_SERVERS, iceTransportPolicy: 'all' })
+    return new NativePC({ ...config, iceServers: ICE_SERVERS, iceTransportPolicy: 'relay' })
   }
   PatchedPC.prototype = NativePC.prototype
   ;(PatchedPC as any).generateCertificate = NativePC.generateCertificate?.bind(NativePC)
