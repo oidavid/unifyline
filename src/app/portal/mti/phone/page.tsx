@@ -221,8 +221,9 @@ export default function MTIPortalPhone() {
     session.on('progress', () => setCallState('ringing'))
     session.on('accepted', () => { setCallState('active'); attachAudio(session) })
     session.on('confirmed', () => { setCallState('active'); attachAudio(session) })
-    session.on('ended', () => { setCallState('idle'); currentCallRef.current = null; loadRecentCalls() })
-    session.on('failed', () => { setCallState('idle'); currentCallRef.current = null })
+    session.on('ended', () => { setCallState('idle'); setDialNumber(''); setShowKeypadDuringCall(false); currentCallRef.current = null; loadRecentCalls() })
+    session.on('failed', () => { setCallState('idle'); setDialNumber(''); setShowKeypadDuringCall(false); currentCallRef.current = null })
+    session.on('bye', () => { setCallState('idle'); setDialNumber(''); setShowKeypadDuringCall(false); currentCallRef.current = null; loadRecentCalls() })
   }
 
   function handleAnswer() {
@@ -233,6 +234,9 @@ export default function MTIPortalPhone() {
     setCallState('active')
     session.on('confirmed', () => attachAudio(session))
     session.connection?.addEventListener('track', () => attachAudio(session))
+    session.on('ended', () => { setCallState('idle'); setDialNumber(''); setShowKeypadDuringCall(false); currentCallRef.current = null; loadRecentCalls() })
+    session.on('failed', () => { setCallState('idle'); setDialNumber(''); setShowKeypadDuringCall(false); currentCallRef.current = null })
+    session.on('bye', () => { setCallState('idle'); setDialNumber(''); setShowKeypadDuringCall(false); currentCallRef.current = null; loadRecentCalls() })
   }
 
   function handleHangup() {
