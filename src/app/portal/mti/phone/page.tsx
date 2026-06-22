@@ -153,9 +153,13 @@ export default function MTIPortalPhone() {
         password,
         display_name: `MTI Ext ${extension}`,
         register: true,
-        register_expires: 300,
+        register_expires: 60,
         session_timers: false,
       })
+
+      // Unregister cleanly when the browser tab closes or refreshes
+      const cleanup = () => { try { userAgent.unregister({ all: true }) } catch {} }
+      window.addEventListener('beforeunload', cleanup)
 
       let staleContactsFlushed = false
       userAgent.on('registered', () => {
