@@ -321,7 +321,7 @@ export default function MTIPortalPhone() {
     <div style={{ minHeight: '100vh', background: IVORY, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 24px' }}>
       <audio ref={audioRef} autoPlay />
 
-      <div style={{ width: '100%', maxWidth: '420px', background: BLACK, color: '#FFFFFF', fontFamily: 'Arial, sans-serif', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 12px 32px rgba(0,0,0,0.18)', border: `1px solid #2A241A`, height: '780px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ width: '100%', maxWidth: '420px', background: BLACK, color: '#FFFFFF', fontFamily: 'Arial, sans-serif', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 12px 32px rgba(0,0,0,0.18)', border: `1px solid #2A241A`, height: '730px', display: 'flex', flexDirection: 'column' }}>
 
         <header style={{ padding: '20px 24px 16px', borderBottom: `1px solid #2A241A` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
