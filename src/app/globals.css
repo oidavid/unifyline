@@ -2,7 +2,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  color-scheme: light;
+  color-scheme: light only;
 }
 @theme inline {
   --color-background: var(--background);
@@ -11,7 +11,7 @@
   --font-mono: var(--font-geist-mono);
 }
 body {
-  background: #ffffff;
-  color: #171717;
+  background: #ffffff !important;
+  color: #171717 !important;
   font-family: Arial, Helvetica, sans-serif;
 }
