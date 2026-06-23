@@ -6,10 +6,10 @@ export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden" style={{colorScheme:'light',backgroundColor:'#ffffff',color:'#111827'}}>
 
       {/* ── NAV ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100 shadow-sm" style={{backgroundColor:'#ffffff'}}>
         <div className="flex items-center justify-between px-5 md:px-8 py-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-[#0C2C68] rounded-lg flex items-center justify-center">
@@ -64,7 +64,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ── HERO ── */}
-      <section className="relative pt-28 md:pt-32 pb-16 md:pb-24 px-5 md:px-6 text-center bg-gradient-to-b from-blue-50/50 to-white overflow-hidden">
+      <section className="relative pt-28 md:pt-32 pb-16 md:pb-24 px-5 md:px-6 text-center overflow-hidden" style={{background:'linear-gradient(to bottom, #eff6ff, #ffffff)'}}>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] md:w-[600px] h-[250px] md:h-[300px] bg-blue-100/40 rounded-full blur-[80px] pointer-events-none" />
         <div className="relative max-w-5xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-2 text-xs md:text-sm text-[#0C2C68] font-medium mb-6 md:mb-8">
