@@ -233,31 +233,49 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── INDUSTRIES ── */}
+      {/* ── PROBLEMS WE SOLVE ── */}
       <section id="verticals" className="py-16 md:py-24 px-5 md:px-6 bg-white">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10 md:mb-16">
-            <h2 className="text-3xl md:text-5xl font-black mb-3 md:mb-4 text-[#0C2C68]">Built for Every Business</h2>
-            <p className="text-gray-500 text-base md:text-lg max-w-2xl mx-auto">From a solo entrepreneur in Lagos to an enterprise with teams across three continents — UnifyLine scales to where you are.</p>
+            <h2 className="text-3xl md:text-5xl font-black mb-3 md:mb-4 text-[#0C2C68]">Sound Familiar?</h2>
+            <p className="text-gray-500 text-base md:text-lg max-w-2xl mx-auto">If your business communicates with customers — UnifyLine was built for you.</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
             {[
-              {icon:"⛪", name:"Churches & Ministries",     desc:"Prayer lines, congregation alerts, pastoral scheduling"},
-              {icon:"🚌", name:"Transportation & Logistics", desc:"Fleet dispatch, lead qualification, driver coordination"},
-              {icon:"🏥", name:"Healthcare",                 desc:"Appointment booking, patient follow-up, after-hours AI"},
-              {icon:"🏠", name:"Real Estate",                desc:"Lead capture, showing scheduling, property inquiries"},
-              {icon:"⚖️", name:"Legal",                      desc:"Client intake, scheduling, confidential voicemail"},
-              {icon:"🌍", name:"Diaspora Business",          desc:"US numbers, global routing, multi-language AI"},
-              {icon:"🛡️", name:"Insurance",                  desc:"Lead qualification, policy inquiries, follow-up"},
-              {icon:"📚", name:"Education",                  desc:"Parent communication, enrollment, event broadcasts"},
-            ].map(({icon, name, desc}) => (
-              <div key={name} className="bg-white hover:bg-blue-50 border border-gray-100 hover:border-blue-200 rounded-xl p-4 md:p-5 transition cursor-default shadow-sm">
-                <div className="text-2xl md:text-3xl mb-2 md:mb-3">{icon}</div>
-                <h3 className="font-bold text-[#0C2C68] mb-1 text-xs md:text-sm">{name}</h3>
-                <p className="text-gray-500 text-xs leading-relaxed hidden sm:block">{desc}</p>
+              {
+                problem: "Calls go to voicemail and leads disappear.",
+                solution: "UnifyLine's AI answers every call, qualifies the lead, and alerts your team instantly — even at 2am.",
+              },
+              {
+                problem: "Your team is spread across cities or countries.",
+                solution: "Every team member gets an extension on their phone. Calls ring simultaneously wherever they are — Lagos, London, or Atlanta.",
+              },
+              {
+                problem: "You're paying too much for a legacy phone system.",
+                solution: "Replace your PBX, receptionist, and answering service with one AI platform at a fraction of the cost.",
+              },
+              {
+                problem: "You don't know what callers actually want.",
+                solution: "Every call is transcribed, summarized by AI, and waiting in your dashboard. Your morning briefing tells you what matters.",
+              },
+              {
+                problem: "Your personal number is your business number.",
+                solution: "Get a dedicated business number in any country. Keep your personal number private. Own the number — not your employee.",
+              },
+              {
+                problem: "You're missing calls in languages you don't speak.",
+                solution: "UnifyLine's AI responds in English, Yoruba, French, or Spanish — automatically detecting the caller's language.",
+              },
+            ].map(({problem, solution}) => (
+              <div key={problem} className="bg-gray-50 border border-gray-100 rounded-xl p-5 md:p-6">
+                <p className="font-bold text-gray-800 text-sm md:text-base mb-2">❌ {problem}</p>
+                <p className="text-gray-500 text-xs md:text-sm leading-relaxed">✅ {solution}</p>
               </div>
             ))}
           </div>
+          <p className="text-center text-gray-400 text-sm mt-8 md:mt-10">
+            If you recognize any of these — <a href="/auth/login" className="text-[#0C2C68] font-semibold hover:underline">start your free trial today.</a>
+          </p>
         </div>
       </section>
 
@@ -265,43 +283,77 @@ export default function LandingPage() {
       <section id="pricing" className="py-16 md:py-24 px-5 md:px-6 bg-gray-50">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10 md:mb-16">
-            <h2 className="text-3xl md:text-5xl font-black mb-3 md:mb-4 text-[#0C2C68]">Simple Pricing</h2>
-            <p className="text-gray-500 text-base md:text-lg">No contracts. No hidden fees. Cancel anytime.</p>
+            <h2 className="text-3xl md:text-5xl font-black mb-3 md:mb-4 text-[#0C2C68]">Pricing That Scales With You</h2>
+            <p className="text-gray-500 text-base md:text-lg">Start solo. Grow to a team. Scale to enterprise. No contracts, no surprises.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            {[
-              {name:"Starter",  price:"$29", desc:"Perfect for solo entrepreneurs", highlight:false,
-               features:["1 phone number","500 minutes/month","AI Receptionist","200 SMS","Call summaries","Email support"]},
-              {name:"Business", price:"$79", desc:"For growing teams of 2 to 20",   highlight:true,
-               features:["3 phone numbers","2,000 minutes/month","Full AI suite","Team softphones","CRM webhooks","Priority support"]},
-              {name:"Ministry", price:"$79", desc:"Flat rate for faith organizations", highlight:false,
-               features:["3 phone numbers","3,000 minutes/month","Prayer line AI","Broadcast SMS","Event tools","Up to 10 users"]},
-            ].map(({name, price, desc, features, highlight}) => (
-              <div key={name} className={`relative rounded-2xl p-6 md:p-8 border ${highlight ? "bg-[#0C2C68] border-[#0C2C68] shadow-2xl" : "bg-white border-gray-200 shadow-sm"}`}>
-                {highlight && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs font-black px-4 py-1 rounded-full whitespace-nowrap">MOST POPULAR</div>}
-                <h3 className={`font-bold text-lg mb-1 ${highlight ? "text-white" : "text-[#0C2C68]"}`}>{name}</h3>
-                <div className="flex items-end gap-1 mb-1">
-                  <span className={`text-4xl font-black ${highlight ? "text-white" : "text-[#0C2C68]"}`}>{price}</span>
-                  <span className={`text-sm mb-1 ${highlight ? "text-blue-300" : "text-gray-400"}`}>/month</span>
-                </div>
-                <p className={`text-sm mb-5 md:mb-6 ${highlight ? "text-blue-200" : "text-gray-500"}`}>{desc}</p>
-                <ul className="space-y-2 mb-6 md:mb-8">
-                  {features.map(f => (
-                    <li key={f} className={`flex items-center gap-2 text-sm ${highlight ? "text-blue-100" : "text-gray-600"}`}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={highlight ? "text-blue-300" : "text-[#0C2C68]"}><polyline points="20 6 9 17 4 12"/></svg>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/auth/login" className={`block text-center font-bold py-3 rounded-xl transition text-sm ${highlight ? "bg-white text-[#0C2C68] hover:bg-blue-50" : "border border-[#0C2C68] text-[#0C2C68] hover:bg-blue-50"}`}>
-                  Start Free Trial
-                </Link>
+
+            {/* Solo */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-sm">
+              <h3 className="font-bold text-lg mb-1 text-[#0C2C68]">Solo</h3>
+              <div className="flex items-end gap-1 mb-1">
+                <span className="text-4xl font-black text-[#0C2C68]">$29</span>
+                <span className="text-sm mb-1 text-gray-400">/month</span>
               </div>
-            ))}
+              <p className="text-sm mb-5 text-gray-500">For individuals and one-person businesses</p>
+              <ul className="space-y-2 mb-8">
+                {["1 virtual phone number","Unlimited inbound calls","AI Receptionist 24/7","Voicemail transcription","Call summaries & logs","Mobile app included"].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[#0C2C68] flex-shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/auth/login" className="block text-center font-bold py-3 rounded-xl transition text-sm border border-[#0C2C68] text-[#0C2C68] hover:bg-blue-50">
+                Start Free Trial
+              </Link>
+            </div>
+
+            {/* Business — highlighted */}
+            <div className="relative bg-[#0C2C68] border border-[#0C2C68] rounded-2xl p-6 md:p-8 shadow-2xl">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs font-black px-4 py-1 rounded-full whitespace-nowrap">MOST POPULAR</div>
+              <h3 className="font-bold text-lg mb-1 text-white">Business</h3>
+              <div className="flex items-end gap-1 mb-1">
+                <span className="text-4xl font-black text-white">$79</span>
+                <span className="text-sm mb-1 text-blue-300">/month</span>
+              </div>
+              <p className="text-sm mb-5 text-blue-200">For teams of 2 to 20 people</p>
+              <ul className="space-y-2 mb-8">
+                {["Everything in Solo","Up to 5 phone numbers","Team softphone extensions","Simultaneous ring groups","AI lead qualification","CRM webhooks","Morning AI briefing","Priority support"].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-blue-100">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-blue-300 flex-shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/auth/login" className="block text-center font-bold py-3 rounded-xl transition text-sm bg-white text-[#0C2C68] hover:bg-blue-50">
+                Start Free Trial
+              </Link>
+            </div>
+
+            {/* Enterprise */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-sm flex flex-col">
+              <h3 className="font-bold text-lg mb-1 text-[#0C2C68]">Enterprise</h3>
+              <div className="flex items-end gap-1 mb-1">
+                <span className="text-4xl font-black text-[#0C2C68]">Custom</span>
+              </div>
+              <p className="text-sm mb-5 text-gray-500">For organizations that need more</p>
+              <ul className="space-y-2 mb-8 flex-1">
+                {["Everything in Business","Unlimited extensions","Custom SIP domain","Dedicated AI training","IVR & call queues","White-label option","SLA & compliance support","Dedicated account manager"].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[#0C2C68] flex-shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <a href="mailto:hello@unifyline.com" className="block text-center font-bold py-3 rounded-xl transition text-sm border border-[#0C2C68] text-[#0C2C68] hover:bg-blue-50">
+                Contact Us
+              </a>
+            </div>
+
           </div>
           <p className="text-center text-gray-400 text-sm mt-6 md:mt-8">
-            Enterprise plans with custom pricing and white-label available.{' '}
-            <a href="mailto:hello@unifyline.com" className="text-[#0C2C68] hover:underline font-medium">Contact us</a>
+            All plans include a 14-day free trial. No credit card required.
           </p>
         </div>
       </section>
