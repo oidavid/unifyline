@@ -9,28 +9,27 @@ export default function LandingPage() {
     <div className="min-h-screen overflow-x-hidden" style={{colorScheme:'light',backgroundColor:'#ffffff',color:'#111827'}}>
 
       {/* ── NAV ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100 shadow-sm" style={{backgroundColor:'#ffffff'}}>
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b" style={{backgroundColor:'#071a3e',borderColor:'rgba(255,255,255,0.1)'}}>
         <div className="flex items-center justify-between px-5 md:px-8 py-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#0C2C68] rounded-lg flex items-center justify-center">
-              <span className="text-white font-black text-sm">U</span>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'rgba(255,255,255,0.15)'}}>
+              <span className="font-black text-sm" style={{color:'#ffffff'}}>U</span>
             </div>
-            <span className="text-xl font-bold text-[#0C2C68] tracking-tight">UnifyLine</span>
+            <span className="text-xl font-bold tracking-tight" style={{color:'#ffffff'}}>UnifyLine</span>
           </div>
 
           {/* Desktop nav links */}
-          <div className="hidden md:flex items-center gap-8 text-sm text-gray-500">
-            <a href="#features"    className="hover:text-[#0C2C68] transition">Features</a>
-            <a href="#how-it-works" className="hover:text-[#0C2C68] transition">How It Works</a>
-            <a href="#pricing"     className="hover:text-[#0C2C68] transition">Pricing</a>
-            <a href="#verticals"   className="hover:text-[#0C2C68] transition">Industries</a>
+          <div className="hidden md:flex items-center gap-8 text-sm" style={{color:'rgba(255,255,255,0.7)'}}>
+            <a href="#features"     className="hover:text-white transition" style={{color:'rgba(255,255,255,0.7)'}}>Features</a>
+            <a href="#how-it-works" className="hover:text-white transition" style={{color:'rgba(255,255,255,0.7)'}}>How It Works</a>
+            <a href="#pricing"      className="hover:text-white transition" style={{color:'rgba(255,255,255,0.7)'}}>Pricing</a>
+            <a href="#verticals"    className="hover:text-white transition" style={{color:'rgba(255,255,255,0.7)'}}>Industries</a>
           </div>
 
           <div className="flex items-center gap-2 md:gap-3">
-            <Link href="/auth/login" className="text-sm text-gray-500 hover:text-[#0C2C68] transition font-medium hidden sm:inline">Sign In</Link>
-            <Link href="/auth/login" className="bg-[#0C2C68] hover:bg-[#1A56C4] text-white text-sm font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-lg transition">Get Started</Link>
-            {/* Hamburger — mobile only */}
-            <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 text-gray-500 hover:text-[#0C2C68]" aria-label="Menu">
+            <Link href="/auth/login" className="text-sm font-medium hidden sm:inline transition" style={{color:'rgba(255,255,255,0.7)'}}>Sign In</Link>
+            <Link href="/auth/login" className="text-sm font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-lg transition" style={{background:'#ffffff',color:'#0C2C68'}}>Get Started</Link>
+            <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 transition" style={{color:'rgba(255,255,255,0.7)'}} aria-label="Menu">
               {menuOpen
                 ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
@@ -41,7 +40,7 @@ export default function LandingPage() {
 
         {/* Mobile dropdown menu */}
         {menuOpen && (
-          <div className="md:hidden border-t border-gray-100 bg-white px-5 py-4 space-y-1">
+          <div className="md:hidden border-t px-5 py-4 space-y-1" style={{backgroundColor:'#071a3e',borderColor:'rgba(255,255,255,0.1)'}}>
             {[
               {href:"#features",     label:"Features"},
               {href:"#how-it-works", label:"How It Works"},
@@ -49,13 +48,15 @@ export default function LandingPage() {
               {href:"#verticals",    label:"Industries"},
             ].map(({href, label}) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)}
-                className="block px-3 py-2.5 rounded-lg text-gray-600 hover:bg-blue-50 hover:text-[#0C2C68] text-sm font-medium transition">
+                className="block px-3 py-2.5 rounded-lg text-sm font-medium transition"
+                style={{color:'rgba(255,255,255,0.8)'}}>
                 {label}
               </a>
             ))}
-            <div className="pt-2 border-t border-gray-100 mt-2">
+            <div className="pt-2 border-t mt-2" style={{borderColor:'rgba(255,255,255,0.1)'}}>
               <Link href="/auth/login" onClick={() => setMenuOpen(false)}
-                className="block text-center bg-[#0C2C68] text-white font-semibold py-2.5 rounded-lg text-sm">
+                className="block text-center font-semibold py-2.5 rounded-lg text-sm"
+                style={{background:'#ffffff',color:'#0C2C68'}}>
                 Sign In / Get Started
               </Link>
             </div>
@@ -63,33 +64,42 @@ export default function LandingPage() {
         )}
       </nav>
 
-      {/* ── HERO ── */}
-      <section className="relative pt-28 md:pt-32 pb-16 md:pb-24 px-5 md:px-6 text-center overflow-hidden" style={{background:'linear-gradient(to bottom, #eff6ff, #ffffff)'}}>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] md:w-[600px] h-[250px] md:h-[300px] bg-blue-100/40 rounded-full blur-[80px] pointer-events-none" />
+      {/* ── HERO — intentional dark blue premium design ── */}
+      <section className="relative pt-28 md:pt-32 pb-16 md:pb-24 px-5 md:px-6 text-center overflow-hidden" style={{background:'linear-gradient(135deg, #071a3e 0%, #0C2C68 50%, #0f3580 100%)'}}>
+        {/* Glow orbs */}
+        <div style={{position:'absolute',top:'-60px',left:'50%',transform:'translateX(-50%)',width:'500px',height:'500px',background:'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%)',pointerEvents:'none'}} />
+        <div style={{position:'absolute',bottom:'0',right:'-100px',width:'300px',height:'300px',background:'radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%)',pointerEvents:'none'}} />
+
         <div className="relative max-w-5xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-2 text-xs md:text-sm text-[#0C2C68] font-medium mb-6 md:mb-8">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+          <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs md:text-sm font-medium mb-6 md:mb-8" style={{background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.2)',color:'#ffffff'}}>
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
             Global AI Communications Platform
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight leading-none mb-5 md:mb-6 text-[#0C2C68]">
+
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight leading-none mb-5 md:mb-6" style={{color:'#ffffff'}}>
             Your Business.<br />
-            <span className="bg-gradient-to-r from-[#1A56C4] to-[#0C2C68] bg-clip-text text-transparent">Everywhere. Intelligent.</span>
+            <span style={{background:'linear-gradient(90deg, #60a5fa, #a78bfa)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
+              Everywhere. Intelligent.
+            </span>
           </h1>
-          <p className="text-lg md:text-2xl text-gray-500 max-w-3xl mx-auto mb-3 md:mb-4 leading-relaxed">
+
+          <p className="text-lg md:text-2xl max-w-3xl mx-auto mb-3 md:mb-4 leading-relaxed" style={{color:'rgba(255,255,255,0.85)'}}>
             UnifyLine gives any business — from Atlanta to Lagos to London — enterprise-grade AI communications at a fraction of what Fortune 500 companies pay.
           </p>
-          <p className="text-sm md:text-lg text-gray-400 max-w-2xl mx-auto mb-8 md:mb-10 leading-relaxed">
+          <p className="text-sm md:text-lg max-w-2xl mx-auto mb-8 md:mb-10 leading-relaxed" style={{color:'rgba(255,255,255,0.55)'}}>
             One platform for calls, SMS, team softphones, AI lead qualification, and business intelligence — in any language, from anywhere in the world.
           </p>
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 mb-10 md:mb-16">
-            <Link href="/auth/login" className="w-full sm:w-auto bg-[#0C2C68] hover:bg-[#1A56C4] text-white font-bold text-base md:text-lg px-8 py-4 rounded-xl transition flex items-center justify-center gap-2">
+            <Link href="/auth/login" className="w-full sm:w-auto font-bold text-base md:text-lg px-8 py-4 rounded-xl transition flex items-center justify-center gap-2" style={{background:'#ffffff',color:'#0C2C68'}}>
               Start Free Trial
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </Link>
-            <a href="#how-it-works" className="w-full sm:w-auto border border-gray-200 hover:border-[#0C2C68] text-gray-600 hover:text-[#0C2C68] font-semibold text-base md:text-lg px-8 py-4 rounded-xl transition text-center">
+            <a href="#how-it-works" className="w-full sm:w-auto font-semibold text-base md:text-lg px-8 py-4 rounded-xl transition text-center" style={{border:'1px solid rgba(255,255,255,0.3)',color:'rgba(255,255,255,0.85)'}}>
               See How It Works
             </a>
           </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-3xl mx-auto">
             {[
               {value:"24/7", label:"AI always working"},
@@ -97,9 +107,9 @@ export default function LandingPage() {
               {value:"100%", label:"Calls captured"},
               {value:"$29",  label:"Starting price"},
             ].map(({value, label}) => (
-              <div key={label} className="bg-white border border-gray-100 shadow-sm rounded-xl p-3 md:p-4">
-                <p className="text-xl md:text-2xl font-black text-[#0C2C68]">{value}</p>
-                <p className="text-xs md:text-sm text-gray-500 mt-1">{label}</p>
+              <div key={label} className="rounded-xl p-3 md:p-4" style={{background:'rgba(255,255,255,0.08)',border:'1px solid rgba(255,255,255,0.12)'}}>
+                <p className="text-xl md:text-2xl font-black" style={{color:'#ffffff'}}>{value}</p>
+                <p className="text-xs md:text-sm mt-1" style={{color:'rgba(255,255,255,0.55)'}}>{label}</p>
               </div>
             ))}
           </div>
