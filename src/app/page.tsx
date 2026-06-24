@@ -27,14 +27,17 @@ export default function LandingPage() {
         <div className="relative max-w-5xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-2 text-sm text-[#0C2C68] font-medium mb-8">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            AI Receptionist Live on Real Phone Numbers
+            Global AI Communications Platform
           </div>
           <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-none mb-6 text-[#0C2C68]">
             Your Business.<br />
-            <span className="bg-gradient-to-r from-[#1A56C4] to-[#0C2C68] bg-clip-text text-transparent">Always Answered.</span>
+            <span className="bg-gradient-to-r from-[#1A56C4] to-[#0C2C68] bg-clip-text text-transparent">Everywhere. Intelligent.</span>
           </h1>
           <p className="text-xl md:text-2xl text-gray-500 max-w-3xl mx-auto mb-10 leading-relaxed">
-            UnifyLine gives any business from Atlanta to Lagos to London enterprise-grade AI communications at a fraction of what Fortune 500 companies pay.
+            UnifyLine gives any business — from Atlanta to Lagos to London — enterprise-grade AI communications at a fraction of what Fortune 500 companies pay.
+            </p>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto mt-3 leading-relaxed">
+              One platform for calls, SMS, team softphones, AI lead qualification, and business intelligence — in any language, from anywhere in the world.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Link href="/auth/login" className="w-full sm:w-auto bg-[#0C2C68] hover:bg-[#1A56C4] text-white font-bold text-lg px-8 py-4 rounded-xl transition flex items-center justify-center gap-2">
@@ -44,7 +47,7 @@ export default function LandingPage() {
             <a href="#how-it-works" className="w-full sm:w-auto border border-gray-200 hover:border-[#0C2C68] text-gray-600 hover:text-[#0C2C68] font-semibold text-lg px-8 py-4 rounded-xl transition text-center">See How It Works</a>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-            {[{value:"24/7",label:"Always answering"},{value:"5+",label:"Languages supported"},{value:"100%",label:"Calls captured"},{value:"$29",label:"Starting price"}].map(({value,label})=>(
+            {[{value:"24/7",label:"AI always working"},{value:"5+",label:"Languages supported"},{value:"100%",label:"Calls captured"},{value:"$29",label:"Starting price"}].map(({value,label})=>(
               <div key={label} className="bg-white border border-gray-100 shadow-sm rounded-xl p-4">
                 <p className="text-2xl font-black text-[#0C2C68]">{value}</p>
                 <p className="text-sm text-gray-500 mt-1">{label}</p>
@@ -68,13 +71,13 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-black mb-4 text-[#0C2C68]">Why UnifyLine?</h2>
-            <p className="text-gray-500 text-lg max-w-2xl mx-auto">Three things no other platform does.</p>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto">Not just a phone system. A communications operating system that thinks, learns, and works for your business around the clock.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {icon:"🌍",title:"One Number for Your Whole World",desc:"One number. One app. One bill. Calls, SMS, and WhatsApp routed intelligently across the US, Nigeria, UK, and Ghana. The AI speaks English, Yoruba, or French depending on who calls.",tag:"Global-First",bg:"bg-blue-50",border:"border-blue-100",tag_color:"text-blue-600"},
-              {icon:"🌙",title:"AI Works the Night Shift",desc:"While you sleep, UnifyLine answers calls, books appointments, captures leads, and prepares your morning briefing. Wake up knowing exactly who called and what they needed.",tag:"AI-First",bg:"bg-purple-50",border:"border-purple-100",tag_color:"text-purple-600"},
-              {icon:"💎",title:"Enterprise Comms. Human Pricing.",desc:"The same AI receptionist, analytics, and omnichannel inbox that Fortune 500 companies pay $500 per seat for, available to any business starting at $29 per month.",tag:"Value-First",bg:"bg-green-50",border:"border-green-100",tag_color:"text-green-600"},
+              {icon:"🤖",title:"An Intelligent Co-Worker, Not Just a Bot",desc:"UnifyLine's AI qualifies leads, books appointments, routes calls, and prepares your morning briefing. It learns your business over time — getting smarter about your customers, your peak hours, and your highest-value opportunities.",tag:"AI-First",bg:"bg-purple-50",border:"border-purple-100",tag_color:"text-purple-600"},
+              {icon:"📈",title:"Communications That Drive Revenue.",desc:"Every call becomes structured data. Hot leads get flagged instantly. Calls feed your CRM automatically. UnifyLine turns every conversation into business intelligence that helps you grow.",tag:"Value-First",bg:"bg-green-50",border:"border-green-100",tag_color:"text-green-600"},
             ].map(({icon,title,desc,tag,bg,border,tag_color})=>(
               <div key={title} className={`${bg} border ${border} rounded-2xl p-8`}>
                 <div className="text-4xl mb-4">{icon}</div>
@@ -96,9 +99,9 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
               {[
-                {step:"01",title:"Sign up and get your number",desc:"Choose a real US phone number in any area code. Your AI receptionist is live immediately."},
-                {step:"02",title:"Configure your AI",desc:"Tell the AI your business name, hours, services, and how to handle callers. Takes 5 minutes."},
-                {step:"03",title:"Share your number",desc:"Put it on your website, business card, Google listing. Every call is answered professionally, 24/7."},
+                {step:"01",title:"Get your number — anywhere in the world",desc:"Choose a real phone number in any area code — US, UK, Nigeria, or wherever your customers are. Your AI is live immediately."},
+                {step:"02",title:"Train your AI in 5 minutes",desc:"Tell the AI your business name, hours, services, and how to handle callers. Takes 5 minutes."},
+                {step:"03",title:"Connect your whole team",desc:"Your staff download the app and get their own extensions. Calls ring simultaneously across Lagos, London, and Atlanta."},
                 {step:"04",title:"Wake up to insights",desc:"Every morning, get a briefing of who called, what they needed, and what requires your attention."},
               ].map(({step,title,desc})=>(
                 <div key={step} className="flex gap-5">
@@ -145,8 +148,8 @@ export default function LandingPage() {
       <section id="verticals" className="py-24 px-6 bg-white">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4 text-[#0C2C68]">Built for Your Industry</h2>
-            <p className="text-gray-500 text-lg max-w-2xl mx-auto">UnifyLine comes pre-configured for the industries that need it most.</p>
+            <h2 className="text-4xl md:text-5xl font-black mb-4 text-[#0C2C68]">Built for Every Business</h2>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto">From a solo entrepreneur in Lagos to an enterprise with teams across three continents — UnifyLine scales to where you are.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
@@ -177,7 +180,7 @@ export default function LandingPage() {
             {[
               {name:"Starter",price:"$29",desc:"Perfect for solo entrepreneurs",features:["1 phone number","500 minutes/month","AI Receptionist","200 SMS","Call summaries","Email support"],highlight:false},
               {name:"Business",price:"$79",desc:"For growing teams of 2 to 20",features:["3 phone numbers","2,000 minutes/month","Full AI suite","Conference bridge","CRM webhooks","Priority support"],highlight:true},
-              {name:"Ministry",price:"$79",desc:"Flat rate for faith organizations",features:["3 phone numbers","3,000 minutes/month","Prayer line AI","Broadcast SMS","Event tools","Up to 10 users"],highlight:false},
+              {name:"Enterprise",price:"Custom",desc:"For organizations that need more",features:["Everything in Business","Unlimited extensions","Custom SIP domain","Dedicated AI training","IVR & call queues","Dedicated account manager"],highlight:false},
             ].map(({name,price,desc,features,highlight})=>(
               <div key={name} className={`relative rounded-2xl p-8 border ${highlight?"bg-[#0C2C68] border-[#0C2C68] shadow-2xl":"bg-white border-gray-200 shadow-sm"}`}>
                 {highlight&&<div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs font-black px-4 py-1 rounded-full">MOST POPULAR</div>}
@@ -195,7 +198,10 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/auth/login" className={`block text-center font-bold py-3 rounded-xl transition text-sm ${highlight?"bg-white text-[#0C2C68] hover:bg-blue-50":"border border-[#0C2C68] text-[#0C2C68] hover:bg-blue-50"}`}>Start Free Trial</Link>
+                {name === "Enterprise"
+                  ? <a href="mailto:hello@unifyline.com" className="block text-center font-bold py-3 rounded-xl transition text-sm border border-[#0C2C68] text-[#0C2C68] hover:bg-blue-50">Contact Us</a>
+                  : <Link href="/auth/login" className={`block text-center font-bold py-3 rounded-xl transition text-sm ${highlight?"bg-white text-[#0C2C68] hover:bg-blue-50":"border border-[#0C2C68] text-[#0C2C68] hover:bg-blue-50"}`}>Start Free Trial</Link>
+                }
               </div>
             ))}
           </div>
@@ -205,8 +211,8 @@ export default function LandingPage() {
 
       <section className="py-24 px-6 bg-[#0C2C68]">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-black mb-4 text-white">Your AI receptionist is<br /><span className="text-blue-300">one click away.</span></h2>
-          <p className="text-blue-200 text-lg mb-8 max-w-xl mx-auto">Start your free trial today. No credit card required. Your number is live in under 5 minutes.</p>
+          <h2 className="text-4xl md:text-5xl font-black mb-4 text-white">The communications platform<br /><span className="text-blue-300">your business deserves.</span></h2>
+          <p className="text-blue-200 text-lg mb-8 max-w-xl mx-auto">Join businesses across the US, Nigeria, UK, and beyond replacing legacy phone systems with AI that works 24/7, speaks multiple languages, and gets smarter every day.</p>
           <Link href="/auth/login" className="inline-flex items-center gap-2 bg-white text-[#0C2C68] hover:bg-blue-50 font-bold text-lg px-10 py-4 rounded-xl transition">
             Get Started Free
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -229,7 +235,7 @@ export default function LandingPage() {
             <a href="#" className="hover:text-[#0C2C68] transition">Terms</a>
             <a href="mailto:hello@unifyline.com" className="hover:text-[#0C2C68] transition">Contact</a>
           </div>
-          <p className="text-gray-400 text-sm">2026 IntelSys Technologies. All rights reserved.</p>
+          <p className="text-gray-400 text-sm">© 2026 IntelSys Technologies. All rights reserved.</p>
         </div>
       </footer>
     </div>
