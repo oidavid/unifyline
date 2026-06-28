@@ -141,6 +141,8 @@ export default function SoftPhonePage() {
   async function loadRecentCalls() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+    const { data: auData } = await supabase.from('account_users').select('account_id').eq('user_id', user.id).single()
+    const accountId = auData?.account_id || user.id
     const { data } = await supabase
       .from('call_detail_records')
       .select('*')
