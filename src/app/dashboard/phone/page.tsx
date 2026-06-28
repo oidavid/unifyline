@@ -1,10 +1,9 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Delete, Wifi, WifiOff, Grid3x3, Clock, Voicemail, Users, Settings as SettingsIcon, Hand } from 'lucide-react'
+import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Delete, Wifi, WifiOff, Grid3x3, Settings as SettingsIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
 type CallState = 'idle' | 'connecting' | 'ringing' | 'active' | 'incoming'
-type Tab = 'keypad' | 'recent' | 'voicemail' | 'contacts' | 'settings'
 
 const SIP_TRANSPORT_HOST = '198.58.114.103'
 const WS_URL = `wss://${SIP_TRANSPORT_HOST}:7443`
@@ -16,47 +15,123 @@ const ICE_SERVERS = [
   { urls: 'turns:198.58.114.103:5349', username: 'unifyline', credential: 'UnifyTurn2026!' },
 ]
 
-// Theme definitions per tenant style
-type Theme = {
-  bg: string
-  panel: string
-  card: string
-  accent: string
-  accentDark: string
-  text: string
-  textMuted: string
-  border: string
-  btnBg: string
-  navBg: string
+type TenantTheme = {
   dark: boolean
+  // Dialpad card
+  dialpadBg: string
+  dialpadText: string
+  dialpadSubtext: string
+  dialpadDisplayBg: string
+  dialpadKeyBg: string
+  dialpadKeyHover: string
+  // Call button
+  callBtnBg: string
+  callBtnText: string
+  // Status indicator
+  statusBg: string
+  statusText: string
+  // Panels (right side)
+  panelBg: string
+  panelBorder: string
+  panelText: string
+  panelSubtext: string
+  // Extensions gradient card
+  extCardBg: string
+  extCardItemBg: string
+  extCardText: string
+  extCardSubtext: string
+  // Header accent color for buttons
+  accentBg: string
+  accentText: string
+  accentHover: string
+  // Ring groups
+  ringGroupDot: string
+  // Reconnect button
+  reconnectBg: string
+  reconnectText: string
+  reconnectHover: string
+  // Settings panel
+  settingsBg: string
+  settingsBorder: string
+  settingsSelectedBg: string
+  settingsSelectedBorder: string
+  settingsSelectedText: string
 }
 
-const DARK_THEME: Theme = {
-  bg: '#0A0A0A',
-  panel: '#1C1813',
-  card: '#2A2418',
-  accent: '#E8C26A',
-  accentDark: '#C9A23F',
-  text: '#F7F5F0',
-  textMuted: '#B8AE96',
-  border: '#2A241A',
-  btnBg: '#2A2418',
-  navBg: '#0F0C08',
-  dark: true,
-}
+function buildTheme(primaryColor: string): TenantTheme {
+  const isDark = ['#1A1008', '#0A0A0A', '#1C1813', '#0F0C08'].includes(primaryColor)
 
-const LIGHT_THEME: Theme = {
-  bg: '#F8FAFC',
-  panel: '#FFFFFF',
-  card: '#F1F5F9',
-  accent: '#0C2C68',
-  accentDark: '#1A56C4',
-  text: '#1E293B',
-  textMuted: '#64748B',
-  border: '#E2E8F0',
-  btnBg: '#E2E8F0',
-  navBg: '#FFFFFF',
-  dark: false,
+  if (isDark) {
+    // MTI dark gold theme
+    return {
+      dark: true,
+      dialpadBg: '#1C1813',
+      dialpadText: '#F7F5F0',
+      dialpadSubtext: '#C9A23F',
+      dialpadDisplayBg: '#0A0A0A',
+      dialpadKeyBg: 'rgba(255,255,255,0.08)',
+      dialpadKeyHover: 'rgba(255,255,255,0.14)',
+      callBtnBg: '#E8C26A',
+      callBtnText: '#0A0A0A',
+      statusBg: 'rgba(232,194,106,0.15)',
+      statusText: '#E8C26A',
+      panelBg: '#1C1813',
+      panelBorder: '#2A241A',
+      panelText: '#F7F5F0',
+      panelSubtext: '#B8AE96',
+      extCardBg: '#1C1813',
+      extCardItemBg: 'rgba(232,194,106,0.12)',
+      extCardText: '#F7F5F0',
+      extCardSubtext: '#E8C26A',
+      accentBg: '#E8C26A',
+      accentText: '#0A0A0A',
+      accentHover: '#C9A23F',
+      ringGroupDot: '#E8C26A',
+      reconnectBg: '#E8C26A',
+      reconnectText: '#0A0A0A',
+      reconnectHover: '#C9A23F',
+      settingsBg: '#1C1813',
+      settingsBorder: '#2A241A',
+      settingsSelectedBg: 'rgba(232,194,106,0.15)',
+      settingsSelectedBorder: '#E8C26A',
+      settingsSelectedText: '#E8C26A',
+    }
+  }
+
+  // IntelSys / default blue theme
+  return {
+    dark: false,
+    dialpadBg: '#0C2C68',
+    dialpadText: '#FFFFFF',
+    dialpadSubtext: '#93C5FD',
+    dialpadDisplayBg: '#071A3E',
+    dialpadKeyBg: 'rgba(255,255,255,0.10)',
+    dialpadKeyHover: 'rgba(255,255,255,0.20)',
+    callBtnBg: '#22C55E',
+    callBtnText: '#FFFFFF',
+    statusBg: 'rgba(255,255,255,0.05)',
+    statusText: '#93C5FD',
+    panelBg: '#FFFFFF',
+    panelBorder: '#E2E8F0',
+    panelText: '#111827',
+    panelSubtext: '#6B7280',
+    extCardBg: '#0C2C68',
+    extCardItemBg: 'rgba(255,255,255,0.10)',
+    extCardText: '#FFFFFF',
+    extCardSubtext: '#93C5FD',
+    accentBg: '#0C2C68',
+    accentText: '#FFFFFF',
+    accentHover: '#1A56C4',
+    ringGroupDot: '#60A5FA',
+    reconnectBg: '#0C2C68',
+    reconnectText: '#FFFFFF',
+    reconnectHover: '#1A56C4',
+    settingsBg: '#FFFFFF',
+    settingsBorder: '#E2E8F0',
+    settingsSelectedBg: '#EFF6FF',
+    settingsSelectedBorder: '#0C2C68',
+    settingsSelectedText: '#0C2C68',
+  }
 }
 
 function patchedCall<T>(fn: () => T): T {
@@ -99,18 +174,8 @@ function createRingtone(ctx: AudioContext): { start: () => void; stop: () => voi
   }
 }
 
-const TABS: { key: Tab; label: string; icon: any }[] = [
-  { key: 'keypad', label: 'Keypad', icon: Grid3x3 },
-  { key: 'recent', label: 'Recent', icon: Clock },
-  { key: 'voicemail', label: 'Voicemail', icon: Voicemail },
-  { key: 'contacts', label: 'Contacts', icon: Users },
-  { key: 'settings', label: 'Settings', icon: SettingsIcon },
-]
-
 export default function DashboardPhone() {
-  const [activeTab, setActiveTab] = useState<Tab>('keypad')
   const [callState, setCallState] = useState<CallState>('idle')
-  const [showKeypadDuringCall, setShowKeypadDuringCall] = useState(false)
   const [dialNumber, setDialNumber] = useState('')
   const [muted, setMuted] = useState(false)
   const [speakerOn, setSpeakerOn] = useState(true)
@@ -121,12 +186,11 @@ export default function DashboardPhone() {
   const [sipDomain, setSipDomain] = useState(SIP_TRANSPORT_HOST)
   const [registered, setRegistered] = useState(false)
   const [connecting, setConnecting] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [recentCalls, setRecentCalls] = useState<any[]>([])
   const [dbExtensions, setDbExtensions] = useState<any[]>([])
-  const [accountId, setAccountId] = useState('')
-  const [theme, setTheme] = useState<Theme>(LIGHT_THEME)
+  const [theme, setTheme] = useState<TenantTheme>(buildTheme('#0C2C68'))
   const [ua, setUa] = useState<any>(null)
-  const [directory, setDirectory] = useState<Record<string, string>>({})
 
   const timerRef = useRef<any>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -139,7 +203,7 @@ export default function DashboardPhone() {
 
   useEffect(() => {
     if (callState === 'active') {
-      timerRef.current = setInterval(() => setCallDuration(d => d + 1), 1000)
+      timerRef.current = setInterval(() => setCallDuration((d: number) => d + 1), 1000)
     } else {
       clearInterval(timerRef.current)
       setCallDuration(0)
@@ -158,11 +222,11 @@ export default function DashboardPhone() {
       if (audioCtxRef.current.state === 'suspended') audioCtxRef.current.resume()
       ringtoneRef.current = createRingtone(audioCtxRef.current)
       ringtoneRef.current.start()
-    } catch (e) { console.warn('[Ringtone] start error:', e) }
+    } catch (e) { console.warn('[Ringtone]', e) }
   }
 
   function stopRingtone() {
-    try { ringtoneRef.current?.stop(); ringtoneRef.current = null } catch (e) { console.warn('[Ringtone] stop error:', e) }
+    try { ringtoneRef.current?.stop(); ringtoneRef.current = null } catch {}
   }
 
   async function loadTenantData() {
@@ -170,47 +234,41 @@ export default function DashboardPhone() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Get account
       const { data: auData } = await supabase.from('account_users').select('account_id').eq('user_id', user.id).single()
       const accId = auData?.account_id || user.id
-      setAccountId(accId)
 
-      // Get account branding to determine theme
       const { data: account } = await supabase.from('accounts').select('brand_primary_color, sip_domain').eq('id', accId).single()
       const primaryColor = account?.brand_primary_color || '#0C2C68'
       const domain = account?.sip_domain || SIP_TRANSPORT_HOST
 
-      // Dark theme for dark primary colors (MTI), light theme for blue (IntelSys)
-      const isDark = primaryColor === '#1A1008' || primaryColor === '#0A0A0A' || primaryColor === '#1C1813'
-      setTheme(isDark ? DARK_THEME : LIGHT_THEME)
+      setTheme(buildTheme(primaryColor))
       setSipDomain(domain)
 
-      // Load extensions
       const { data: exts } = await supabase.from('extensions').select('*').eq('account_id', accId).order('extension_number')
       if (exts && exts.length > 0) {
         setDbExtensions(exts)
         setExtension(exts[0].extension_number)
         setPassword(exts[0].sip_password || `UL${exts[0].extension_number}secure!`)
-        // Build directory
-        const dir: Record<string, string> = {}
-        exts.forEach(e => { dir[e.extension_number] = e.display_name })
-        setDirectory(dir)
       }
 
-      // Load recent calls
       const { data: calls } = await supabase
-        .from('call_detail_records')
-        .select('*')
-        .eq('account_id', accId)
-        .order('created_at', { ascending: false })
-        .limit(20)
+        .from('call_detail_records').select('*').eq('account_id', accId)
+        .order('created_at', { ascending: false }).limit(8)
       setRecentCalls(calls || [])
     } catch (e) { console.error('[loadTenantData]', e) }
   }
 
-  function callerLabel(num: string): { name: string; sub: string } {
-    const known = directory[num]
-    return known ? { name: known, sub: `Ext. ${num}` } : { name: num, sub: '' }
+  function attachAudio(session: any) {
+    try {
+      if (session?.connection && audioRef.current) {
+        const remoteStream = new MediaStream()
+        session.connection.getReceivers().forEach((r: any) => {
+          if (r.track) remoteStream.addTrack(r.track)
+        })
+        audioRef.current.srcObject = remoteStream
+        audioRef.current.play().catch((e: any) => console.warn('[Audio]', e))
+      }
+    } catch (e) { console.warn('[Audio] attach error:', e) }
   }
 
   async function initSIP() {
@@ -251,11 +309,12 @@ export default function DashboardPhone() {
         if (session.direction === 'incoming') {
           setIncomingFrom(session.remote_identity?.uri?.user || 'Unknown')
           setCallState('incoming')
-          session.on('ended', () => { setCallState('idle'); currentCallRef.current = null; loadTenantData() })
-          session.on('failed', () => { setCallState('idle'); currentCallRef.current = null })
+          session.on('ended', () => { stopRingtone(); setCallState('idle'); currentCallRef.current = null; loadTenantData() })
+          session.on('failed', () => { stopRingtone(); setCallState('idle'); currentCallRef.current = null })
         } else {
           session.on('progress', () => setCallState('ringing'))
-          session.on('accepted', () => setCallState('active'))
+          session.on('accepted', () => { setCallState('active'); attachAudio(session) })
+          session.on('confirmed', () => { setCallState('active'); attachAudio(session) })
           session.on('ended', () => { setCallState('idle'); currentCallRef.current = null; loadTenantData() })
           session.on('failed', () => { setCallState('idle'); currentCallRef.current = null })
         }
@@ -263,10 +322,12 @@ export default function DashboardPhone() {
 
       userAgent.start()
       setUa(userAgent)
-    } catch (e) {
-      console.error('[SIP] init error:', e)
-      setConnecting(false)
-    }
+    } catch (e) { console.error('[SIP]', e); setConnecting(false) }
+  }
+
+  function handleReconnect() {
+    if (ua) { try { ua.stop() } catch {}; setUa(null); setRegistered(false) }
+    setTimeout(initSIP, 500)
   }
 
   function handleCall() {
@@ -285,12 +346,15 @@ export default function DashboardPhone() {
     try {
       if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
       audioCtxRef.current.resume()
+      stopRingtone()
       patchedCall(() => currentCallRef.current.answer({ mediaConstraints: { audio: true, video: false } }))
       setCallState('active')
+      currentCallRef.current.on('confirmed', () => attachAudio(currentCallRef.current))
     } catch (e) { console.error('[SIP] answer error:', e) }
   }
 
   function handleHangup() {
+    stopRingtone()
     try { currentCallRef.current?.terminate() } catch {}
     setCallState('idle')
     currentCallRef.current = null
@@ -301,270 +365,329 @@ export default function DashboardPhone() {
     if (!session) return
     if (muted) { try { session.unmute({ audio: true }) } catch {} }
     else { try { session.mute({ audio: true }) } catch {} }
-    setMuted(m => !m)
+    setMuted((m: boolean) => !m)
   }
-
-  function toggleSpeaker() { setSpeakerOn(s => !s) }
 
   function sendDtmf(key: string) {
     try { currentCallRef.current?.sendDTMF(key) } catch {}
   }
 
-  function callBack(num: string) {
-    setDialNumber(num)
-    setActiveTab('keypad')
-  }
-
   const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
   const T = theme
 
-  const btn = (bg: string, color: string) => ({
-    background: bg, color, border: 'none', borderRadius: '12px',
-    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    transition: 'opacity 0.15s',
-  })
-
   return (
-    <div style={{ background: T.bg, minHeight: '100vh', color: T.text, fontFamily: theme.dark ? "'Georgia', serif" : "system-ui, sans-serif" }}>
-      <div style={{ maxWidth: '480px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <div className="p-6 max-w-6xl mx-auto" style={{ fontFamily: T.dark ? "'Georgia', serif" : "system-ui, sans-serif" }}>
+      <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
 
-        {/* Header */}
-        <div style={{ padding: '20px 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${T.border}` }}>
-          <div>
-            <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: T.textMuted, marginBottom: '2px' }}>Your Line</div>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: T.text }}>Ext. {extension || '—'}</div>
+      {/* Page header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-bold" style={{ color: T.panelText }}>Phone</h2>
+          <p className="text-sm" style={{ color: T.panelSubtext }}>Browser-based softphone powered by WebRTC</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 text-sm" style={{ color: registered ? '#22C55E' : T.panelSubtext }}>
+            {registered ? <Wifi size={14} /> : <WifiOff size={14} />}
+            {registered ? 'Connected' : 'Not connected'}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {registered ? (
-              <div style={{ background: `${T.accent}22`, border: `1px solid ${T.accent}44`, borderRadius: '20px', padding: '4px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: theme.dark ? '#7FAE8E' : '#22C55E' }} />
-                <span style={{ fontSize: '11px', color: T.accent, fontWeight: 600 }}>Live</span>
-              </div>
-            ) : (
-              <button onClick={initSIP} disabled={connecting || !extension}
-                style={{ ...btn(T.accent, theme.dark ? T.bg : '#FFFFFF'), padding: '8px 16px', fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em', opacity: connecting ? 0.6 : 1 }}>
-                {connecting ? 'Connecting…' : 'Connect'}
+          <button
+            onClick={() => setShowSettings((s: boolean) => !s)}
+            className="px-3 py-1.5 text-sm rounded-lg transition"
+            style={{ border: `1px solid ${T.panelBorder}`, background: T.panelBg, color: T.panelSubtext }}
+          >
+            Settings
+          </button>
+          <button
+            onClick={handleReconnect}
+            className="px-4 py-1.5 text-sm rounded-lg font-medium transition"
+            style={{ background: T.reconnectBg, color: T.reconnectText }}
+          >
+            {connecting ? 'Connecting…' : registered ? 'Reconnect' : 'Connect'}
+          </button>
+        </div>
+      </div>
+
+      {/* Settings panel */}
+      {showSettings && (
+        <div className="rounded-xl p-5 mb-6 shadow-sm" style={{ background: T.settingsBg, border: `1px solid ${T.settingsBorder}` }}>
+          <h3 className="font-semibold mb-4" style={{ color: T.panelText }}>SIP Connection Settings</h3>
+          <div className="grid grid-cols-4 gap-3 mb-4">
+            {dbExtensions.map((e: any) => (
+              <button
+                key={e.id}
+                onClick={() => { setExtension(e.extension_number); setPassword(e.sip_password || `UL${e.extension_number}secure!`) }}
+                className="p-3 rounded-lg text-left transition"
+                style={{
+                  border: `2px solid ${extension === e.extension_number ? T.settingsSelectedBorder : T.settingsBorder}`,
+                  background: extension === e.extension_number ? T.settingsSelectedBg : 'transparent',
+                }}
+              >
+                <p className="font-semibold text-sm" style={{ color: T.settingsSelectedText }}>Ext. {e.extension_number}</p>
+                <p className="text-xs mt-0.5" style={{ color: T.panelSubtext }}>{e.display_name}</p>
               </button>
-            )}
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: 'Extension', value: extension, onChange: setExtension, type: 'text' },
+              { label: 'Password', value: password, onChange: setPassword, type: 'password' },
+              { label: 'SIP Domain', value: sipDomain, onChange: setSipDomain, type: 'text' },
+            ].map(({ label, value, onChange, type }) => (
+              <div key={label}>
+                <label className="text-xs uppercase tracking-wide" style={{ color: T.panelSubtext }}>{label}</label>
+                <input
+                  type={type}
+                  value={value}
+                  onChange={(e: { target: { value: string } }) => onChange(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{ border: `1px solid ${T.settingsBorder}`, background: T.settingsBg, color: T.panelText }}
+                />
+              </div>
+            ))}
           </div>
         </div>
+      )}
 
-        {/* Main content */}
-        <main style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+      {/* Main 3-column grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {activeTab === 'keypad' && (
-            <div style={{ maxWidth: '360px', margin: '0 auto' }}>
-              {/* Display */}
-              <div style={{ background: T.panel, borderRadius: '16px', padding: '24px', textAlign: 'center', marginBottom: '20px', minHeight: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', border: `1px solid ${T.border}` }}>
-                {callState === 'idle' && (
-                  <div style={{ fontFamily: theme.dark ? 'monospace' : 'inherit', fontSize: '28px', letterSpacing: '0.05em', color: dialNumber ? T.text : T.textMuted }}>
-                    {dialNumber || 'Enter number'}
-                  </div>
-                )}
-                {callState === 'connecting' && <div style={{ color: T.accent, fontSize: '15px' }}>Connecting…</div>}
-                {callState === 'ringing' && (
-                  <>
-                    <div style={{ fontFamily: 'monospace', fontSize: '26px' }}>{dialNumber}</div>
-                    <div style={{ color: T.accent, fontSize: '11px', marginTop: '6px' }}>Ringing…</div>
-                  </>
-                )}
-                {callState === 'active' && (() => {
-                  const target = dialNumber || incomingFrom
-                  const { name, sub } = callerLabel(target)
-                  return (
-                    <>
-                      <div style={{ fontSize: '22px', fontWeight: 600 }}>{name}</div>
-                      {sub && <div style={{ fontSize: '11px', color: T.textMuted, marginTop: '2px' }}>{sub}</div>}
-                      <div style={{ color: theme.dark ? '#7FAE8E' : '#22C55E', fontSize: '14px', fontWeight: 700, marginTop: '6px' }}>{fmt(callDuration)}</div>
-                    </>
-                  )
-                })()}
-                {callState === 'incoming' && (() => {
-                  const { name, sub } = callerLabel(incomingFrom)
-                  return (
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ color: T.accent, fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Incoming call</div>
-                      <div style={{ fontSize: '20px', fontWeight: 600, marginTop: '4px' }}>{name}</div>
-                      {sub && <div style={{ fontSize: '11px', color: T.textMuted, marginTop: '2px' }}>{sub}</div>}
-                    </div>
-                  )
-                })()}
+        {/* LEFT — Dialpad */}
+        <div className="lg:col-span-1">
+          <div className="rounded-2xl overflow-hidden shadow-2xl" style={{ background: T.dialpadBg }}>
+            <div className="px-6 pt-6 pb-4">
+              {/* Extension + status */}
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-xs font-medium" style={{ color: T.dialpadSubtext }}>Your Extension</p>
+                  <p className="font-bold text-lg" style={{ color: T.dialpadText }}>Ext. {extension || '—'}</p>
+                </div>
+                <div className="flex items-center gap-1" style={{ color: registered ? '#4ADE80' : T.dialpadSubtext }}>
+                  {registered ? <Wifi size={12} /> : <WifiOff size={12} />}
+                  <span className="text-xs">{registered ? 'Live' : 'Offline'}</span>
+                </div>
               </div>
 
-              {callState === 'idle' && !showKeypadDuringCall && (
-                <>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
-                    {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
-                      <button key={key} onClick={() => setDialNumber(d => d + key)}
-                        style={{ ...btn(T.card, T.text), padding: '18px 0', fontSize: '19px', fontWeight: 600, border: `1px solid ${T.border}` }}>
-                        {key}
-                      </button>
-                    ))}
+              {/* Display screen */}
+              <div className="rounded-xl p-4 min-h-[80px] flex flex-col items-center justify-center" style={{ background: T.dialpadDisplayBg }}>
+                {callState === 'idle' && (
+                  <div className="text-center">
+                    <p className="text-xl font-mono" style={{ color: dialNumber ? T.dialpadText : T.dialpadSubtext }}>{dialNumber || 'Enter number'}</p>
+                    <p className="text-xs mt-1" style={{ color: T.dialpadSubtext }}>Ready</p>
                   </div>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={handleCall} disabled={!dialNumber || !registered}
-                      style={{ ...btn(dialNumber && registered ? T.accent : T.card, dialNumber && registered ? (theme.dark ? T.bg : '#FFFFFF') : T.textMuted), flex: 1, padding: '16px', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, gap: '8px' }}>
-                      <Phone size={16} /> Call
-                    </button>
-                    <button onClick={() => setDialNumber(d => d.slice(0, -1))}
-                      style={{ ...btn(T.card, T.text), width: '54px', border: `1px solid ${T.border}` }}>
-                      <Delete size={16} />
-                    </button>
+                )}
+                {callState === 'connecting' && (
+                  <div className="text-center">
+                    <p className="text-xl font-mono" style={{ color: T.dialpadText }}>{dialNumber}</p>
+                    <p className="text-xs mt-1 animate-pulse" style={{ color: '#FBBF24' }}>Connecting…</p>
                   </div>
-                </>
+                )}
+                {callState === 'ringing' && (
+                  <div className="text-center">
+                    <p className="text-xl font-mono" style={{ color: T.dialpadText }}>{dialNumber}</p>
+                    <p className="text-xs mt-1 animate-pulse" style={{ color: T.dialpadSubtext }}>Ringing…</p>
+                  </div>
+                )}
+                {callState === 'active' && (
+                  <div className="text-center">
+                    <p className="text-xl font-mono" style={{ color: T.dialpadText }}>{dialNumber || incomingFrom}</p>
+                    <p className="text-sm font-bold mt-1" style={{ color: '#4ADE80' }}>{fmt(callDuration)}</p>
+                  </div>
+                )}
+                {callState === 'incoming' && (
+                  <div className="text-center">
+                    <p className="text-xs animate-pulse" style={{ color: T.callBtnBg }}>📞 Incoming Call</p>
+                    <p className="text-lg font-bold mt-1" style={{ color: T.dialpadText }}>{incomingFrom}</p>
+                    <p className="text-xs mt-1 animate-pulse" style={{ color: T.dialpadSubtext }}>Ringing…</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="px-6 pb-6">
+              {/* Keypad */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
+                  <button
+                    key={key}
+                    onClick={() => callState === 'active' ? sendDtmf(key) : setDialNumber((d: string) => d + key)}
+                    className="font-bold text-lg py-3 rounded-xl transition active:scale-95"
+                    style={{ background: T.dialpadKeyBg, color: T.dialpadText }}
+                  >
+                    {key}
+                  </button>
+                ))}
+              </div>
+
+              {/* Action buttons */}
+              {callState === 'idle' && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCall}
+                    disabled={!dialNumber || !registered}
+                    className="flex-1 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-40"
+                    style={{ background: T.callBtnBg, color: T.callBtnText }}
+                  >
+                    <Phone size={20} /> Call
+                  </button>
+                  <button
+                    onClick={() => setDialNumber((d: string) => d.slice(0, -1))}
+                    className="px-4 rounded-xl transition"
+                    style={{ background: T.dialpadKeyBg, color: T.dialpadText }}
+                  >
+                    <Delete size={18} />
+                  </button>
+                </div>
               )}
 
               {callState === 'incoming' && (
-                <div style={{ display: 'flex', justifyContent: 'space-around', padding: '20px 0' }}>
-                  <RoundButton icon={<PhoneOff size={26} />} label="Decline" bg="#9A3F3F" onClick={handleHangup} />
-                  <RoundButton icon={<Phone size={26} />} label="Answer" bg={T.accent} fg={theme.dark ? T.bg : '#FFFFFF'} onClick={handleAnswer} />
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleAnswer}
+                    className="flex-1 font-bold py-4 rounded-xl flex items-center justify-center gap-2 animate-pulse"
+                    style={{ background: '#22C55E', color: '#FFFFFF' }}
+                  >
+                    <Phone size={20} /> Answer
+                  </button>
+                  <button
+                    onClick={handleHangup}
+                    className="flex-1 font-bold py-4 rounded-xl flex items-center justify-center gap-2"
+                    style={{ background: '#EF4444', color: '#FFFFFF' }}
+                  >
+                    <PhoneOff size={20} /> Decline
+                  </button>
                 </div>
               )}
 
               {(callState === 'connecting' || callState === 'ringing' || callState === 'active') && (
-                <div>
-                  {callState === 'active' && !showKeypadDuringCall && (
-                    <div style={{ display: 'flex', justifyContent: 'space-around', padding: '12px 0 24px' }}>
-                      <RoundButton icon={muted ? <MicOff size={22} /> : <Mic size={22} />} label={muted ? 'Unmute' : 'Mute'} bg={muted ? T.accent : T.card} fg={muted ? (theme.dark ? T.bg : '#FFFFFF') : T.text} onClick={toggleMute} small />
-                      <RoundButton icon={<Hand size={22} />} label="Hold" bg={T.card} fg={T.textMuted} onClick={() => {}} small disabled />
-                      <RoundButton icon={speakerOn ? <Volume2 size={22} /> : <VolumeX size={22} />} label="Speaker" bg={!speakerOn ? T.accent : T.card} fg={!speakerOn ? (theme.dark ? T.bg : '#FFFFFF') : T.text} onClick={toggleSpeaker} small />
-                    </div>
-                  )}
-                  {callState === 'active' && showKeypadDuringCall && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
-                      {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
-                        <button key={key} onClick={() => sendDtmf(key)}
-                          style={{ ...btn(T.card, T.text), padding: '14px 0', fontSize: '17px', fontWeight: 600 }}>
-                          {key}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                <div className="space-y-3">
                   {callState === 'active' && (
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-                      <RoundButton icon={<Grid3x3 size={20} />} label="Keypad" bg={showKeypadDuringCall ? T.accent : T.card} fg={showKeypadDuringCall ? (theme.dark ? T.bg : '#FFFFFF') : T.text} onClick={() => setShowKeypadDuringCall(s => !s)} small />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={toggleMute}
+                        className="flex-1 py-3 rounded-xl text-xs font-medium flex items-center justify-center gap-1"
+                        style={{ background: muted ? '#EF4444' : T.dialpadKeyBg, color: muted ? '#FFFFFF' : T.dialpadText }}
+                      >
+                        {muted ? <MicOff size={14} /> : <Mic size={14} />}
+                        {muted ? 'Unmute' : 'Mute'}
+                      </button>
+                      <button
+                        onClick={() => setSpeakerOn((s: boolean) => !s)}
+                        className="flex-1 py-3 rounded-xl text-xs font-medium flex items-center justify-center gap-1"
+                        style={{ background: T.dialpadKeyBg, color: T.dialpadText }}
+                      >
+                        {speakerOn ? <Volume2 size={14} /> : <VolumeX size={14} />} Speaker
+                      </button>
                     </div>
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'center' }}>
-                    <RoundButton icon={<PhoneOff size={26} />} label={callState === 'active' ? 'End Call' : 'Cancel'} bg="#9A3F3F" onClick={handleHangup} />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'recent' && (
-            <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-              <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: T.textMuted, fontWeight: 700, marginBottom: '16px' }}>Recent Calls</div>
-              {recentCalls.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {recentCalls.map((cdr: any) => (
-                    <div key={cdr.id} onClick={() => callBack(cdr.from_number)}
-                      style={{ background: T.panel, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', borderRadius: '12px', border: `1px solid ${T.border}` }}>
-                      <Phone size={16} style={{ color: T.accent, flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '15px', fontWeight: 600 }}>{cdr.from_number}</div>
-                        {cdr.ai_summary && <div style={{ fontSize: '12px', color: T.textMuted, marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cdr.ai_summary}</div>}
-                      </div>
-                      <div style={{ textAlign: 'right', fontSize: '11px', color: T.textMuted, flexShrink: 0 }}>
-                        <div>{cdr.duration_sec}s</div>
-                        <div>{new Date(cdr.created_at).toLocaleTimeString()}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '64px 24px', color: T.textMuted }}>
-                  <Clock size={28} style={{ opacity: 0.3, marginBottom: '8px' }} />
-                  <div style={{ fontSize: '13px' }}>No recent calls</div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'settings' && (
-            <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-              <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: T.textMuted, fontWeight: 700, marginBottom: '16px' }}>Extensions</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '24px' }}>
-                {dbExtensions.map(e => (
-                  <button key={e.id} onClick={() => { setExtension(e.extension_number); setPassword(e.sip_password || 'ULdefault!') }}
-                    style={{ ...btn(extension === e.extension_number ? T.accent : T.panel, extension === e.extension_number ? (theme.dark ? T.bg : '#FFFFFF') : T.text), padding: '14px', textAlign: 'left', border: `2px solid ${extension === e.extension_number ? T.accent : T.border}`, borderRadius: '12px', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
-                    <span style={{ fontWeight: 700, fontSize: '14px' }}>Ext. {e.extension_number}</span>
-                    <span style={{ fontSize: '12px', opacity: 0.7 }}>{e.display_name}</span>
+                  <button
+                    onClick={handleHangup}
+                    className="w-full font-bold py-4 rounded-xl flex items-center justify-center gap-2"
+                    style={{ background: '#EF4444', color: '#FFFFFF' }}
+                  >
+                    <PhoneOff size={20} />
+                    {callState === 'active' ? 'End Call' : 'Cancel'}
                   </button>
-                ))}
-              </div>
-              <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: T.textMuted, fontWeight: 700, marginBottom: '12px' }}>Connection</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div>
-                  <label style={{ fontSize: '11px', color: T.textMuted, display: 'block', marginBottom: '4px' }}>Extension</label>
-                  <input value={extension} onChange={e => setExtension(e.target.value)}
-                    style={{ width: '100%', background: T.panel, border: `1px solid ${T.border}`, borderRadius: '8px', padding: '10px 12px', color: T.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
-                <div>
-                  <label style={{ fontSize: '11px', color: T.textMuted, display: 'block', marginBottom: '4px' }}>Password</label>
-                  <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                    style={{ width: '100%', background: T.panel, border: `1px solid ${T.border}`, borderRadius: '8px', padding: '10px 12px', color: T.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '11px', color: T.textMuted, display: 'block', marginBottom: '4px' }}>SIP Domain</label>
-                  <input value={sipDomain} onChange={e => setSipDomain(e.target.value)}
-                    style={{ width: '100%', background: T.panel, border: `1px solid ${T.border}`, borderRadius: '8px', padding: '10px 12px', color: T.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
-                </div>
-                <button onClick={initSIP} disabled={connecting || !extension}
-                  style={{ ...btn(T.accent, theme.dark ? T.bg : '#FFFFFF'), padding: '14px', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', marginTop: '4px', opacity: connecting ? 0.6 : 1 }}>
-                  {connecting ? 'Connecting…' : registered ? 'Re-connect' : 'Connect'}
-                </button>
+              )}
+
+              {/* Status bar */}
+              <div className="mt-4 rounded-xl px-4 py-3 flex items-center gap-2" style={{ background: T.statusBg }}>
+                <div className={`w-2 h-2 rounded-full ${registered ? 'animate-pulse' : ''}`}
+                  style={{ background: registered ? '#4ADE80' : T.dialpadSubtext }} />
+                <span className="text-xs" style={{ color: T.statusText }}>
+                  {registered ? `Ext ${extension} · WebRTC Connected` : 'Click Connect to activate'}
+                </span>
               </div>
             </div>
-          )}
+          </div>
 
-          {activeTab === 'voicemail' && <ComingSoon icon={Voicemail} label="Voicemail" note="Voicemail messages will appear here." color={T.textMuted} accent={T.accent} />}
-          {activeTab === 'contacts' && <ComingSoon icon={Users} label="Contacts" note="Saved contacts will appear here soon." color={T.textMuted} accent={T.accent} />}
-        </main>
+          {/* Ring Groups */}
+          <div className="mt-4 rounded-xl shadow-sm p-4" style={{ background: T.panelBg, border: `1px solid ${T.panelBorder}` }}>
+            <h3 className="font-semibold text-sm mb-3" style={{ color: T.panelText }}>Ring Groups</h3>
+            <div className="space-y-2">
+              {[{ name: 'All Staff', num: '2000' }, { name: 'Sales Team', num: '2001' }, { name: 'Support', num: '2002' }, { name: 'Management', num: '2003' }].map(({ name, num }) => (
+                <button
+                  key={num}
+                  onClick={() => setDialNumber(num)}
+                  className="w-full flex items-center gap-3 p-2 rounded-lg transition text-left"
+                  style={{ color: T.panelText }}
+                >
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: T.ringGroupDot }} />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{name}</p>
+                  </div>
+                  <span className="text-xs font-mono" style={{ color: T.panelSubtext }}>{num}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
-        {/* Bottom tab bar */}
-        <nav style={{ display: 'flex', borderTop: `1px solid ${T.border}`, background: T.navBg }}>
-          {TABS.map(({ key, label, icon: Icon }) => (
-            <button key={key} onClick={() => setActiveTab(key)}
-              style={{
-                flex: 1, background: 'transparent', border: 'none', padding: '12px 0 10px',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                color: activeTab === key ? T.accent : T.textMuted, cursor: 'pointer',
-              }}>
-              <Icon size={20} />
-              <span style={{ fontSize: '10px', letterSpacing: '0.02em' }}>{label}</span>
-            </button>
-          ))}
-        </nav>
+        {/* RIGHT — Recent calls + Extensions */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Recent calls */}
+          <div className="rounded-xl shadow-sm" style={{ background: T.panelBg, border: `1px solid ${T.panelBorder}` }}>
+            <div className="p-5 flex items-center justify-between" style={{ borderBottom: `1px solid ${T.panelBorder}` }}>
+              <h3 className="font-semibold" style={{ color: T.panelText }}>Recent Calls</h3>
+              <span className="text-xs" style={{ color: T.panelSubtext }}>Click to call back</span>
+            </div>
+            <div>
+              {recentCalls.length > 0 ? recentCalls.map((cdr: any) => (
+                <div
+                  key={cdr.id}
+                  className="p-4 flex items-center gap-4 cursor-pointer transition"
+                  style={{ borderBottom: `1px solid ${T.panelBorder}` }}
+                  onClick={() => setDialNumber(cdr.from_number)}
+                >
+                  <div className="p-2 rounded-lg" style={{ background: T.settingsSelectedBg }}>
+                    <Phone size={16} style={{ color: T.accentBg }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm" style={{ color: T.panelText }}>{cdr.from_number}</p>
+                    {cdr.ai_summary && (
+                      <p className="text-xs mt-0.5 truncate" style={{ color: T.panelSubtext }}>{cdr.ai_summary}</p>
+                    )}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs" style={{ color: T.panelSubtext }}>{cdr.duration_sec}s</p>
+                    <p className="text-xs" style={{ color: T.panelSubtext }}>{new Date(cdr.created_at).toLocaleTimeString()}</p>
+                  </div>
+                  <button
+                    onClick={(e: { stopPropagation: () => void }) => { e.stopPropagation(); setDialNumber(cdr.from_number) }}
+                    className="p-2 rounded-lg transition"
+                    style={{ color: T.panelSubtext }}
+                  >
+                    <Phone size={14} />
+                  </button>
+                </div>
+              )) : (
+                <div className="text-center py-12" style={{ color: T.panelSubtext }}>
+                  <Phone size={32} className="mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No recent calls</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Extensions grid */}
+          <div className="rounded-xl p-5 text-white" style={{ background: T.extCardBg }}>
+            <h4 className="font-semibold mb-3" style={{ color: T.extCardText }}>Your Extensions</h4>
+            <div className="grid grid-cols-2 gap-3">
+              {dbExtensions.map((e: any) => (
+                <div key={e.id} className="rounded-xl p-3" style={{ background: T.extCardItemBg }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono font-bold text-sm" style={{ color: T.extCardText }}>Ext. {e.extension_number}</span>
+                    <span className="text-xs" style={{ color: T.extCardSubtext }}>{e.display_name}</span>
+                  </div>
+                  {e.direct_did && (
+                    <p className="text-xs font-mono" style={{ color: T.extCardSubtext }}>{e.direct_did}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
-      <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
-    </div>
-  )
-}
-
-function RoundButton({ icon, label, bg, fg = '#FFFFFF', onClick, small, disabled }: {
-  icon: React.ReactNode; label: string; bg: string; fg?: string
-  onClick: () => void; small?: boolean; disabled?: boolean
-}) {
-  const size = small ? 56 : 72
-  return (
-    <button onClick={disabled ? undefined : onClick} disabled={disabled}
-      style={{ background: 'transparent', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1 }}>
-      <div style={{ width: `${size}px`, height: `${size}px`, borderRadius: '50%', background: bg, color: fg, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
-        {icon}
-      </div>
-      <span style={{ fontSize: '11px', letterSpacing: '0.02em' }}>{label}</span>
-    </button>
-  )
-}
-
-function ComingSoon({ icon: Icon, label, note, color, accent }: { icon: any; label: string; note: string; color: string; accent: string }) {
-  return (
-    <div style={{ textAlign: 'center', padding: '80px 24px', color }}>
-      <Icon size={32} style={{ opacity: 0.3, marginBottom: '12px', color: accent }} />
-      <div style={{ fontSize: '18px', fontWeight: 600, marginBottom: '6px' }}>{label}</div>
-      <div style={{ fontSize: '13px' }}>{note}</div>
     </div>
   )
 }
