@@ -21,7 +21,7 @@ export default function AIReceptionistPage() {
       // Try account_users first for multi-tenant, fall back to user.id
       const { data: auData } = await supabase.from('account_users').select('account_id').eq('user_id', user.id).single()
       const accountId = auData?.account_id || user.id
-      const { data } = await supabase.from('ai_receptionist_config').select('*').eq('account_id', accountId).single()
+      const { data } = await supabase.from('ai_receptionist_config').select('*').eq('tenant_account_id', accountId).single()
       if (data) setConfig(data)
     }
     loadConfig()
@@ -33,7 +33,7 @@ export default function AIReceptionistPage() {
     if (!user) return
     const { data: auData } = await supabase.from('account_users').select('account_id').eq('user_id', user.id).single()
     const accountId = auData?.account_id || user.id
-    await supabase.from('ai_receptionist_config').upsert({ ...config, account_id: accountId })
+    await supabase.from('ai_receptionist_config').upsert({ ...config, tenant_account_id: accountId }, { onConflict: 'tenant_account_id' })
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
     setLoading(false)
