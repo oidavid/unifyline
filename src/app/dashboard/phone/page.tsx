@@ -104,7 +104,7 @@ export default function SoftPhonePage() {
     if (data && data.length > 0) {
       setDbExtensions(data)
       setExtension(data[0].extension_number)
-      setPassword(data[0].sip_password || ULsecure!)
+      setPassword(data[0].sip_password || 'ULdefault!')
     }
   }
 
