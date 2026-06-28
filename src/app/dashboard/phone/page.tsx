@@ -93,7 +93,19 @@ export default function SoftPhonePage() {
   const ringtoneRef = useRef<{ start: () => void; stop: () => void } | null>(null)
   const supabase = createClient()
 
-  useEffect(() => { loadRecentCalls() }, [])
+  useEffect(() => { loadRecentCalls(); loadExtensions() }, [])
+  async function loadExtensions() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data: auData } = await supabase.from('account_users').select('account_id').eq('user_id', user.id).single()
+    const accountId = auData?.account_id || user.id
+    const { data } = await supabase.from('extensions').select('*').eq('account_id', accountId).order('extension_number')
+    if (data && data.length > 0) {
+      setDbExtensions(data)
+      setExtension(data[0].extension_number)
+      setPassword(data[0].sip_password || ULsecure!)
+    }
+  }
 
   useEffect(() => {
     if (callState === 'active') {
