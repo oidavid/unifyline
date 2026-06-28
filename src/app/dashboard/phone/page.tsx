@@ -539,18 +539,13 @@ export default function SoftPhonePage() {
           <div className="bg-gradient-to-r from-[#0C2C68] to-[#1A56C4] rounded-xl p-5 text-white">
             <h4 className="font-semibold mb-3">Your Extensions</h4>
             <div className="grid grid-cols-2 gap-3">
-              {[
-                {ext:'101',label:'Sales',did:'404-592-9690'},
-                {ext:'102',label:'Support',did:'404-592-5562'},
-                {ext:'103',label:'Management',did:'404-592-5562'},
-                {ext:'104',label:'CEO Direct',did:'678-460-5180'}
-              ].map(({ext,label,did})=>(
-                <div key={ext} className="bg-white/10 rounded-xl p-3">
+              {dbExtensions.map((e) => (
+                <div key={e.id} className="bg-white/10 rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono font-bold text-sm">Ext. {ext}</span>
-                    <span className="text-blue-200 text-xs">{label}</span>
+                    <span className="font-mono font-bold text-sm">Ext. {e.extension_number}</span>
+                    <span className="text-blue-200 text-xs">{e.display_name}</span>
                   </div>
-                  <p className="text-blue-300 text-xs font-mono">{did}</p>
+                  <p className="text-blue-300 text-xs font-mono">{e.mobile || ""}</p>
                 </div>
               ))}
             </div>
