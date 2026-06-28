@@ -144,7 +144,7 @@ export default function SoftPhonePage() {
     const { data } = await supabase
       .from('call_detail_records')
       .select('*')
-      .eq('account_id', user.id)
+      .eq('account_id', accountId)
       .order('created_at', { ascending: false })
       .limit(8)
     setRecentCalls(data || [])

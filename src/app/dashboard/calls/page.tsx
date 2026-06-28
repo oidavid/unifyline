@@ -21,7 +21,7 @@ export default async function CallLogsPage() {
 
   const accountId = auData?.account_id || user.id
 
-  const { data: cdrs } = await supabase
+  const { data: cdrs } = await supabaseAdmin
     .from('call_detail_records')
     .select('*')
     .eq('account_id', accountId)
