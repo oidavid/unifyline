@@ -77,6 +77,7 @@ export default function SoftPhonePage() {
   const [dialNumber, setDialNumber] = useState('')
   const [muted, setMuted] = useState(false)
   const [callDuration, setCallDuration] = useState(0)
+  const [dbExtensions, setDbExtensions] = useState<any[]>([])
   const [incomingFrom, setIncomingFrom] = useState('')
   const [extension, setExtension] = useState('101')
   const [password, setPassword] = useState('UL101secure!')
