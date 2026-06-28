@@ -1,4 +1,4 @@
-﻿import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import { Phone, PhoneIncoming, PhoneOutgoing, Clock, Mic, MessageSquare, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
@@ -9,12 +9,14 @@ export default async function DashboardPage() {
   if (!user) redirect('/auth/login')
 
   const { data: profile } = await supabase.from('profiles').select('full_name, first_name').eq('id', user.id).single()
-  const { data: cdrs } = await supabase.from('call_detail_records').select('*').eq('account_id', user.id).order('created_at', { ascending: false }).limit(5)
-  const { count: totalCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', user.id)
-  const { count: inboundCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', user.id).eq('direction', 'inbound')
-  const { count: outboundCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', user.id).eq('direction', 'outbound')
-  const { data: aiConfig } = await supabase.from('ai_receptionist_config').select('active, greeting_text').eq('account_id', user.id).single()
-  const { data: allCdrs } = await supabase.from('call_detail_records').select('duration_sec').eq('account_id', user.id)
+  const { data: accountUser } = await supabase.from('account_users').select('account_id').eq('user_id', user.id).single()
+  const accountId = accountUser?.account_id || user.id
+  const { data: cdrs } = await supabase.from('call_detail_records').select('*').eq('account_id', accountId).order('created_at', { ascending: false }).limit(5)
+  const { count: totalCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', accountId)
+  const { count: inboundCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', accountId).eq('direction', 'inbound')
+  const { count: outboundCalls } = await supabase.from('call_detail_records').select('*', { count: 'exact', head: true }).eq('account_id', accountId).eq('direction', 'outbound')
+  const { data: aiConfig } = await supabase.from('ai_receptionist_config').select('active, greeting_text').eq('account_id', accountId).single()
+  const { data: allCdrs } = await supabase.from('call_detail_records').select('duration_sec').eq('account_id', accountId)
 
   const avgDuration = allCdrs && allCdrs.length > 0 ? Math.round(allCdrs.reduce((a, c) => a + (c.duration_sec || 0), 0) / allCdrs.length) : 0
   const formatDuration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
