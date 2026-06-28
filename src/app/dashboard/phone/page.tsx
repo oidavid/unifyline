@@ -1,23 +1,64 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { Phone, PhoneOff, Mic, MicOff, Volume2, Delete, Wifi, WifiOff } from 'lucide-react'
+import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Delete, Wifi, WifiOff, Grid3x3, Clock, Voicemail, Users, Settings as SettingsIcon, Hand } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
 type CallState = 'idle' | 'connecting' | 'ringing' | 'active' | 'incoming'
+type Tab = 'keypad' | 'recent' | 'voicemail' | 'contacts' | 'settings'
 
-const SIP_SERVER = '198.58.114.103'
-const WS_URL = `wss://${SIP_SERVER}:7443`
+const SIP_TRANSPORT_HOST = '198.58.114.103'
+const WS_URL = `wss://${SIP_TRANSPORT_HOST}:7443`
 
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:198.58.114.103:3478' },
+  { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'turn:198.58.114.103:3478', username: 'unifyline', credential: 'UnifyTurn2026!' },
   { urls: 'turns:198.58.114.103:5349', username: 'unifyline', credential: 'UnifyTurn2026!' },
 ]
 
-// JsSIP creates RTCPeerConnection internally before any event fires.
-// The only way to inject ICE/TURN config is to patch window.RTCPeerConnection
-// before calling ua.call() or session.answer(), then restore it immediately after.
+// Theme definitions per tenant style
+type Theme = {
+  bg: string
+  panel: string
+  card: string
+  accent: string
+  accentDark: string
+  text: string
+  textMuted: string
+  border: string
+  btnBg: string
+  navBg: string
+  dark: boolean
+}
+
+const DARK_THEME: Theme = {
+  bg: '#0A0A0A',
+  panel: '#1C1813',
+  card: '#2A2418',
+  accent: '#E8C26A',
+  accentDark: '#C9A23F',
+  text: '#F7F5F0',
+  textMuted: '#B8AE96',
+  border: '#2A241A',
+  btnBg: '#2A2418',
+  navBg: '#0F0C08',
+  dark: true,
+}
+
+const LIGHT_THEME: Theme = {
+  bg: '#F8FAFC',
+  panel: '#FFFFFF',
+  card: '#F1F5F9',
+  accent: '#0C2C68',
+  accentDark: '#1A56C4',
+  text: '#1E293B',
+  textMuted: '#64748B',
+  border: '#E2E8F0',
+  btnBg: '#E2E8F0',
+  navBg: '#FFFFFF',
+  dark: false,
+}
+
 function patchedCall<T>(fn: () => T): T {
   const NativePC = window.RTCPeerConnection
   function PatchedPC(this: any, config: RTCConfiguration) {
@@ -26,43 +67,29 @@ function patchedCall<T>(fn: () => T): T {
   PatchedPC.prototype = NativePC.prototype
   ;(PatchedPC as any).generateCertificate = NativePC.generateCertificate?.bind(NativePC)
   window.RTCPeerConnection = PatchedPC as any
-  try {
-    return fn()
-  } finally {
-    window.RTCPeerConnection = NativePC
-  }
+  try { return fn() } finally { window.RTCPeerConnection = NativePC }
 }
 
-// Generate a stable browser-specific ringtone using Web Audio API
 function createRingtone(ctx: AudioContext): { start: () => void; stop: () => void } {
   let interval: ReturnType<typeof setInterval> | null = null
   let oscillators: OscillatorNode[] = []
-
   function ring() {
     oscillators.forEach(o => { try { o.stop() } catch {} })
     oscillators = []
-
-    const freqs = [440, 480]
-    freqs.forEach(freq => {
+    ;[440, 480].forEach(freq => {
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
       osc.frequency.value = freq
       osc.type = 'sine'
       gain.gain.setValueAtTime(0.15, ctx.currentTime)
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4)
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.start()
-      osc.stop(ctx.currentTime + 0.4)
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.start(); osc.stop(ctx.currentTime + 0.4)
       oscillators.push(osc)
     })
   }
-
   return {
-    start() {
-      ring()
-      interval = setInterval(ring, 1200)
-    },
+    start() { ring(); interval = setInterval(ring, 1200) },
     stop() {
       if (interval) clearInterval(interval)
       interval = null
@@ -72,21 +99,35 @@ function createRingtone(ctx: AudioContext): { start: () => void; stop: () => voi
   }
 }
 
-export default function SoftPhonePage() {
+const TABS: { key: Tab; label: string; icon: any }[] = [
+  { key: 'keypad', label: 'Keypad', icon: Grid3x3 },
+  { key: 'recent', label: 'Recent', icon: Clock },
+  { key: 'voicemail', label: 'Voicemail', icon: Voicemail },
+  { key: 'contacts', label: 'Contacts', icon: Users },
+  { key: 'settings', label: 'Settings', icon: SettingsIcon },
+]
+
+export default function DashboardPhone() {
+  const [activeTab, setActiveTab] = useState<Tab>('keypad')
   const [callState, setCallState] = useState<CallState>('idle')
+  const [showKeypadDuringCall, setShowKeypadDuringCall] = useState(false)
   const [dialNumber, setDialNumber] = useState('')
   const [muted, setMuted] = useState(false)
+  const [speakerOn, setSpeakerOn] = useState(true)
   const [callDuration, setCallDuration] = useState(0)
-  const [dbExtensions, setDbExtensions] = useState<any[]>([])
   const [incomingFrom, setIncomingFrom] = useState('')
-  const [extension, setExtension] = useState('101')
-  const [password, setPassword] = useState('UL101secure!')
-  const [sipDomain, setSipDomain] = useState(SIP_SERVER)
+  const [extension, setExtension] = useState('')
+  const [password, setPassword] = useState('')
+  const [sipDomain, setSipDomain] = useState(SIP_TRANSPORT_HOST)
   const [registered, setRegistered] = useState(false)
+  const [connecting, setConnecting] = useState(false)
   const [recentCalls, setRecentCalls] = useState<any[]>([])
-  const [showSettings, setShowSettings] = useState(false)
+  const [dbExtensions, setDbExtensions] = useState<any[]>([])
+  const [accountId, setAccountId] = useState('')
+  const [theme, setTheme] = useState<Theme>(LIGHT_THEME)
   const [ua, setUa] = useState<any>(null)
-  const [currentCall, setCurrentCall] = useState<any>(null)
+  const [directory, setDirectory] = useState<Record<string, string>>({})
+
   const timerRef = useRef<any>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const currentCallRef = useRef<any>(null)
@@ -94,19 +135,7 @@ export default function SoftPhonePage() {
   const ringtoneRef = useRef<{ start: () => void; stop: () => void } | null>(null)
   const supabase = createClient()
 
-  useEffect(() => { loadRecentCalls(); loadExtensions() }, [])
-  async function loadExtensions() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data: auData } = await supabase.from('account_users').select('account_id').eq('user_id', user.id).single()
-    const accountId = auData?.account_id || user.id
-    const { data } = await supabase.from('extensions').select('*').eq('account_id', accountId).order('extension_number')
-    if (data && data.length > 0) {
-      setDbExtensions(data)
-      setExtension(data[0].extension_number)
-      setPassword(data[0].sip_password || 'ULdefault!')
-    }
-  }
+  useEffect(() => { loadTenantData() }, [])
 
   useEffect(() => {
     if (callState === 'active') {
@@ -118,58 +147,77 @@ export default function SoftPhonePage() {
     return () => clearInterval(timerRef.current)
   }, [callState])
 
-  // Start/stop ringtone based on call state
   useEffect(() => {
-    if (callState === 'incoming') {
-      startRingtone()
-    } else {
-      stopRingtone()
-    }
+    if (callState === 'incoming') startRingtone()
+    else stopRingtone()
   }, [callState])
 
   function startRingtone() {
     try {
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
-      }
-      if (audioCtxRef.current.state === 'suspended') {
-        audioCtxRef.current.resume()
-      }
+      if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+      if (audioCtxRef.current.state === 'suspended') audioCtxRef.current.resume()
       ringtoneRef.current = createRingtone(audioCtxRef.current)
       ringtoneRef.current.start()
-    } catch (e) {
-      console.warn('[Ringtone] failed to start:', e)
-    }
+    } catch (e) { console.warn('[Ringtone] start error:', e) }
   }
 
   function stopRingtone() {
-    try {
-      ringtoneRef.current?.stop()
-      ringtoneRef.current = null
-    } catch (e) {
-      console.warn('[Ringtone] failed to stop:', e)
-    }
+    try { ringtoneRef.current?.stop(); ringtoneRef.current = null } catch (e) { console.warn('[Ringtone] stop error:', e) }
   }
 
-  async function loadRecentCalls() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data: auData } = await supabase.from('account_users').select('account_id').eq('user_id', user.id).single()
-    const accountId = auData?.account_id || user.id
-    const { data } = await supabase
-      .from('call_detail_records')
-      .select('*')
-      .eq('account_id', accountId)
-      .order('created_at', { ascending: false })
-      .limit(8)
-    setRecentCalls(data || [])
+  async function loadTenantData() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Get account
+      const { data: auData } = await supabase.from('account_users').select('account_id').eq('user_id', user.id).single()
+      const accId = auData?.account_id || user.id
+      setAccountId(accId)
+
+      // Get account branding to determine theme
+      const { data: account } = await supabase.from('accounts').select('brand_primary_color, sip_domain').eq('id', accId).single()
+      const primaryColor = account?.brand_primary_color || '#0C2C68'
+      const domain = account?.sip_domain || SIP_TRANSPORT_HOST
+
+      // Dark theme for dark primary colors (MTI), light theme for blue (IntelSys)
+      const isDark = primaryColor === '#1A1008' || primaryColor === '#0A0A0A' || primaryColor === '#1C1813'
+      setTheme(isDark ? DARK_THEME : LIGHT_THEME)
+      setSipDomain(domain)
+
+      // Load extensions
+      const { data: exts } = await supabase.from('extensions').select('*').eq('account_id', accId).order('extension_number')
+      if (exts && exts.length > 0) {
+        setDbExtensions(exts)
+        setExtension(exts[0].extension_number)
+        setPassword(exts[0].sip_password || `UL${exts[0].extension_number}secure!`)
+        // Build directory
+        const dir: Record<string, string> = {}
+        exts.forEach(e => { dir[e.extension_number] = e.display_name })
+        setDirectory(dir)
+      }
+
+      // Load recent calls
+      const { data: calls } = await supabase
+        .from('call_detail_records')
+        .select('*')
+        .eq('account_id', accId)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      setRecentCalls(calls || [])
+    } catch (e) { console.error('[loadTenantData]', e) }
+  }
+
+  function callerLabel(num: string): { name: string; sub: string } {
+    const known = directory[num]
+    return known ? { name: known, sub: `Ext. ${num}` } : { name: num, sub: '' }
   }
 
   async function initSIP() {
+    if (!extension || !password) return
+    setConnecting(true)
     try {
       const JsSIP = await import('jssip')
-      JsSIP.debug.enable('JsSIP:*')
-
       const socket = new JsSIP.WebSocketInterface(WS_URL)
       const userAgent = new JsSIP.UA({
         sockets: [socket],
@@ -177,381 +225,346 @@ export default function SoftPhonePage() {
         password,
         display_name: `Ext ${extension}`,
         register: true,
-        register_expires: 300,
+        register_expires: 60,
         session_timers: false,
       })
 
-      // Ghost-registration fix: on first register, flush all stale contacts
-      // then re-register so this browser is the only active contact for this extension.
+      const cleanup = () => { try { userAgent.unregister({ all: true }) } catch {} }
+      window.addEventListener('beforeunload', cleanup)
+
       let staleContactsFlushed = false
       userAgent.on('registered', () => {
         setRegistered(true)
+        setConnecting(false)
         if (!staleContactsFlushed) {
           staleContactsFlushed = true
-          try {
-            userAgent.unregister({ all: true })
-            setTimeout(() => {
-              try { userAgent.register() } catch {}
-            }, 800)
-          } catch {}
+          try { userAgent.unregister({ all: true }) } catch {}
+          setTimeout(() => { try { userAgent.register() } catch {} }, 800)
         }
       })
+      userAgent.on('unregistered', () => { if (staleContactsFlushed) setRegistered(true) })
+      userAgent.on('registrationFailed', () => { setRegistered(false); setConnecting(false) })
 
-      userAgent.on('unregistered', () => setRegistered(false))
-      userAgent.on('registrationFailed', () => setRegistered(false))
-
-      userAgent.on('newRTCSession', (e: any) => {
-        const session = e.session
+      userAgent.on('newRTCSession', (data: any) => {
+        const session = data.session
+        currentCallRef.current = session
         if (session.direction === 'incoming') {
-          setIncomingFrom(e.request.from.display_name || e.request.from.uri.user)
+          setIncomingFrom(session.remote_identity?.uri?.user || 'Unknown')
           setCallState('incoming')
-          setCurrentCall(session)
-          currentCallRef.current = session
-          session.on('ended', () => {
-            stopRingtone()
-            setCallState('idle')
-            setCurrentCall(null)
-            currentCallRef.current = null
-            loadRecentCalls()
-          })
-          session.on('failed', () => {
-            stopRingtone()
-            setCallState('idle')
-            setCurrentCall(null)
-            currentCallRef.current = null
-          })
+          session.on('ended', () => { setCallState('idle'); currentCallRef.current = null; loadTenantData() })
+          session.on('failed', () => { setCallState('idle'); currentCallRef.current = null })
+        } else {
+          session.on('progress', () => setCallState('ringing'))
+          session.on('accepted', () => setCallState('active'))
+          session.on('ended', () => { setCallState('idle'); currentCallRef.current = null; loadTenantData() })
+          session.on('failed', () => { setCallState('idle'); currentCallRef.current = null })
         }
       })
 
       userAgent.start()
       setUa(userAgent)
-    } catch (err) {
-      console.error('[SIP] Init error:', err)
+    } catch (e) {
+      console.error('[SIP] init error:', e)
+      setConnecting(false)
     }
-  }
-
-  function attachAudio(session: any) {
-    try {
-      if (session?.connection && audioRef.current) {
-        const remoteStream = new MediaStream()
-        session.connection.getReceivers().forEach((r: any) => {
-          if (r.track) remoteStream.addTrack(r.track)
-        })
-        audioRef.current.srcObject = remoteStream
-        audioRef.current.play().catch((e: any) => console.warn('[Audio]', e))
-      }
-    } catch(e) { console.warn('[Audio] attach error:', e) }
   }
 
   function handleCall() {
-    if (!dialNumber || !ua) return
-    const target = `sip:${dialNumber}@${sipDomain}`
-    const session = patchedCall(() => ua.call(target, {
-      mediaConstraints: { audio: true, video: false },
-      rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false },
-      sessionTimersExpires: 120,
-    }))
-    setCurrentCall(session)
-    currentCallRef.current = session
-    setCallState('connecting')
-
-    session.on('peerconnection', (data: any) => {
-      const pc = data.peerconnection
-      pc.addEventListener('icecandidate', (e: any) => {
-        console.log('[ICE] candidate type:', e.candidate?.type)
-      })
-    })
-    session.on('progress', () => setCallState('ringing'))
-    session.on('accepted', () => {
-      setCallState('active')
-      attachAudio(session)
-    })
-    session.on('confirmed', () => {
-      setCallState('active')
-      attachAudio(session)
-    })
-    session.on('ended', () => {
-      setCallState('idle')
-      setCurrentCall(null)
-      currentCallRef.current = null
-      loadRecentCalls()
-    })
-    session.on('failed', () => {
-      setCallState('idle')
-      setCurrentCall(null)
-      currentCallRef.current = null
-    })
+    if (!ua || !dialNumber) return
+    try {
+      patchedCall(() => ua.call(`sip:${dialNumber}@${sipDomain}`, {
+        mediaConstraints: { audio: true, video: false },
+        rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false },
+      }))
+      setCallState('connecting')
+    } catch (e) { console.error('[SIP] call error:', e) }
   }
 
   function handleAnswer() {
-    const session = currentCallRef.current
-    if (!session) return
-    stopRingtone()
-    patchedCall(() => session.answer({
-      mediaConstraints: { audio: true, video: false },
-    }))
-    setCallState('active')
-    session.on('confirmed', () => attachAudio(session))
-    session.connection?.addEventListener('track', () => attachAudio(session))
+    if (!currentCallRef.current) return
+    try {
+      if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+      audioCtxRef.current.resume()
+      patchedCall(() => currentCallRef.current.answer({ mediaConstraints: { audio: true, video: false } }))
+      setCallState('active')
+    } catch (e) { console.error('[SIP] answer error:', e) }
   }
 
   function handleHangup() {
-    stopRingtone()
-    const session = currentCallRef.current
-    if (session) {
-      try { session.terminate() } catch {}
-    }
+    try { currentCallRef.current?.terminate() } catch {}
     setCallState('idle')
-    setCurrentCall(null)
     currentCallRef.current = null
   }
 
   function toggleMute() {
     const session = currentCallRef.current
     if (!session) return
-    if (muted) {
-      session.unmute({ audio: true })
-    } else {
-      session.mute({ audio: true })
-    }
-    setMuted(!muted)
+    if (muted) { try { session.unmute({ audio: true }) } catch {} }
+    else { try { session.mute({ audio: true }) } catch {} }
+    setMuted(m => !m)
   }
 
-  function sendDtmf(tone: string) {
-    try {
-      currentCallRef.current?.sendDTMF(tone)
-    } catch (e) {
-      console.warn('[DTMF] error:', e)
-    }
+  function toggleSpeaker() { setSpeakerOn(s => !s) }
+
+  function sendDtmf(key: string) {
+    try { currentCallRef.current?.sendDTMF(key) } catch {}
   }
 
-  const fmt = (s: number) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
+  function callBack(num: string) {
+    setDialNumber(num)
+    setActiveTab('keypad')
+  }
 
-  const EXTENSION_PRESETS = [
-    { ext: '101', label: 'Sales', pw: 'UL101secure!', domain: SIP_SERVER },
-    { ext: '102', label: 'Support', pw: 'UL102secure!', domain: SIP_SERVER },
-    { ext: '103', label: 'Management', pw: 'UL103secure!', domain: SIP_SERVER },
-    { ext: '104', label: 'CEO Direct', pw: 'UL104secure!', domain: SIP_SERVER },
-    { ext: '201', label: 'MTI Test (isolated tenant)', pw: 'MTI201secure!', domain: 'mti.unifyline.local' },
-  ]
+  const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+  const T = theme
+
+  const btn = (bg: string, color: string) => ({
+    background: bg, color, border: 'none', borderRadius: '12px',
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'opacity 0.15s',
+  })
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <audio ref={audioRef} autoPlay />
+    <div style={{ background: T.bg, minHeight: '100vh', color: T.text, fontFamily: theme.dark ? "'Georgia', serif" : "system-ui, sans-serif" }}>
+      <div style={{ maxWidth: '480px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: '100vh' }}>
 
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">Phone</h2>
-          <p className="text-sm text-gray-500">Browser-based softphone powered by WebRTC</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-1.5 text-sm ${registered ? 'text-green-600' : 'text-gray-400'}`}>
-            {registered ? <Wifi size={14}/> : <WifiOff size={14}/>}
-            {registered ? 'Connected' : 'Not connected'}
+        {/* Header */}
+        <div style={{ padding: '20px 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${T.border}` }}>
+          <div>
+            <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: T.textMuted, marginBottom: '2px' }}>Your Line</div>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: T.text }}>Ext. {extension || '—'}</div>
           </div>
-          <button onClick={() => setShowSettings(!showSettings)}
-            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">
-            Settings
-          </button>
-          <button onClick={() => { if (ua) { ua.stop(); setUa(null); setRegistered(false) } setTimeout(initSIP, 500) }}
-            className="px-4 py-1.5 text-sm bg-[#0C2C68] text-white rounded-lg hover:bg-[#1A56C4] font-medium">
-            {registered ? 'Reconnect' : 'Connect'}
-          </button>
-        </div>
-      </div>
-
-      {showSettings && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-4">SIP Connection Settings</h3>
-          <div className="grid grid-cols-4 gap-3 mb-4">
-            {EXTENSION_PRESETS.map(p => (
-              <button key={p.ext}
-                onClick={() => { setExtension(p.ext); setPassword(p.pw); setSipDomain(p.domain) }}
-                className={`p-3 rounded-lg border-2 text-left transition ${extension === p.ext ? 'border-[#0C2C68] bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                <p className="font-semibold text-sm text-[#0C2C68]">Ext. {p.ext}</p>
-                <p className="text-xs text-gray-500">{p.label}</p>
-              </button>
-            ))}
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wide">Extension</label>
-              <input value={extension} onChange={e => setExtension(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0C2C68]"/>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wide">Password</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0C2C68]"/>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wide">SIP Domain</label>
-              <input value={sipDomain} onChange={e => setSipDomain(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#0C2C68]"/>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <div className="bg-[#0C2C68] rounded-2xl overflow-hidden shadow-2xl">
-            <div className="px-6 pt-6 pb-4">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-blue-300 text-xs font-medium">Your Extension</p>
-                  <p className="text-white font-bold text-lg">Ext. {extension}</p>
-                </div>
-                <div className={`flex items-center gap-1 ${registered ? 'text-green-400' : 'text-gray-400'}`}>
-                  {registered ? <Wifi size={12}/> : <WifiOff size={12}/>}
-                  <span className="text-xs">{registered ? 'Live' : 'Offline'}</span>
-                </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {registered ? (
+              <div style={{ background: `${T.accent}22`, border: `1px solid ${T.accent}44`, borderRadius: '20px', padding: '4px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: theme.dark ? '#7FAE8E' : '#22C55E' }} />
+                <span style={{ fontSize: '11px', color: T.accent, fontWeight: 600 }}>Live</span>
               </div>
-              <div className="bg-[#071A3E] rounded-xl p-4 min-h-[80px] flex flex-col items-center justify-center">
-                {callState === 'idle' && <div className="text-center"><p className="text-white text-xl font-mono">{dialNumber || 'Enter number'}</p><p className="text-blue-400 text-xs mt-1">Ready</p></div>}
-                {callState === 'connecting' && <div className="text-center"><p className="text-white text-xl font-mono">{dialNumber}</p><p className="text-yellow-400 text-xs mt-1 animate-pulse">Connecting...</p></div>}
-                {callState === 'ringing' && <div className="text-center"><p className="text-white text-xl font-mono">{dialNumber}</p><p className="text-blue-300 text-xs mt-1 animate-pulse">Ringing...</p></div>}
-                {callState === 'active' && <div className="text-center"><p className="text-white text-xl font-mono">{dialNumber || incomingFrom}</p><p className="text-green-400 text-sm font-bold mt-1">{fmt(callDuration)}</p></div>}
-                {callState === 'incoming' && (
-                  <div className="text-center">
-                    <p className="text-blue-300 text-xs animate-pulse">📞 Incoming Call</p>
-                    <p className="text-white text-lg font-bold mt-1">{incomingFrom}</p>
-                    <p className="text-blue-300 text-xs mt-1 animate-pulse">Ringing...</p>
+            ) : (
+              <button onClick={initSIP} disabled={connecting || !extension}
+                style={{ ...btn(T.accent, theme.dark ? T.bg : '#FFFFFF'), padding: '8px 16px', fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em', opacity: connecting ? 0.6 : 1 }}>
+                {connecting ? 'Connecting…' : 'Connect'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Main content */}
+        <main style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+
+          {activeTab === 'keypad' && (
+            <div style={{ maxWidth: '360px', margin: '0 auto' }}>
+              {/* Display */}
+              <div style={{ background: T.panel, borderRadius: '16px', padding: '24px', textAlign: 'center', marginBottom: '20px', minHeight: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', border: `1px solid ${T.border}` }}>
+                {callState === 'idle' && (
+                  <div style={{ fontFamily: theme.dark ? 'monospace' : 'inherit', fontSize: '28px', letterSpacing: '0.05em', color: dialNumber ? T.text : T.textMuted }}>
+                    {dialNumber || 'Enter number'}
                   </div>
                 )}
-              </div>
-            </div>
-            <div className="px-6 pb-6">
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
-                  <button key={key}
-                    onClick={() => callState === 'active' ? sendDtmf(key) : setDialNumber(d => d + key)}
-                    className="bg-white/10 hover:bg-white/20 text-white font-bold text-lg py-3 rounded-xl transition active:scale-95">
-                    {key}
-                  </button>
-                ))}
+                {callState === 'connecting' && <div style={{ color: T.accent, fontSize: '15px' }}>Connecting…</div>}
+                {callState === 'ringing' && (
+                  <>
+                    <div style={{ fontFamily: 'monospace', fontSize: '26px' }}>{dialNumber}</div>
+                    <div style={{ color: T.accent, fontSize: '11px', marginTop: '6px' }}>Ringing…</div>
+                  </>
+                )}
+                {callState === 'active' && (() => {
+                  const target = dialNumber || incomingFrom
+                  const { name, sub } = callerLabel(target)
+                  return (
+                    <>
+                      <div style={{ fontSize: '22px', fontWeight: 600 }}>{name}</div>
+                      {sub && <div style={{ fontSize: '11px', color: T.textMuted, marginTop: '2px' }}>{sub}</div>}
+                      <div style={{ color: theme.dark ? '#7FAE8E' : '#22C55E', fontSize: '14px', fontWeight: 700, marginTop: '6px' }}>{fmt(callDuration)}</div>
+                    </>
+                  )
+                })()}
+                {callState === 'incoming' && (() => {
+                  const { name, sub } = callerLabel(incomingFrom)
+                  return (
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ color: T.accent, fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Incoming call</div>
+                      <div style={{ fontSize: '20px', fontWeight: 600, marginTop: '4px' }}>{name}</div>
+                      {sub && <div style={{ fontSize: '11px', color: T.textMuted, marginTop: '2px' }}>{sub}</div>}
+                    </div>
+                  )
+                })()}
               </div>
 
-              {callState === 'idle' && (
-                <div className="flex gap-3">
-                  <button onClick={handleCall} disabled={!dialNumber || !registered}
-                    className="flex-1 bg-green-500 hover:bg-green-400 disabled:opacity-40 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition">
-                    <Phone size={20}/>Call
-                  </button>
-                  <button onClick={() => setDialNumber(d => d.slice(0,-1))}
-                    className="bg-white/10 hover:bg-white/20 text-white px-4 rounded-xl transition">
-                    <Delete size={18}/>
-                  </button>
-                </div>
+              {callState === 'idle' && !showKeypadDuringCall && (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
+                    {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
+                      <button key={key} onClick={() => setDialNumber(d => d + key)}
+                        style={{ ...btn(T.card, T.text), padding: '18px 0', fontSize: '19px', fontWeight: 600, border: `1px solid ${T.border}` }}>
+                        {key}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={handleCall} disabled={!dialNumber || !registered}
+                      style={{ ...btn(dialNumber && registered ? T.accent : T.card, dialNumber && registered ? (theme.dark ? T.bg : '#FFFFFF') : T.textMuted), flex: 1, padding: '16px', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, gap: '8px' }}>
+                      <Phone size={16} /> Call
+                    </button>
+                    <button onClick={() => setDialNumber(d => d.slice(0, -1))}
+                      style={{ ...btn(T.card, T.text), width: '54px', border: `1px solid ${T.border}` }}>
+                      <Delete size={16} />
+                    </button>
+                  </div>
+                </>
               )}
 
               {callState === 'incoming' && (
-                <div className="flex gap-3">
-                  <button onClick={handleAnswer}
-                    className="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 animate-pulse">
-                    <Phone size={20}/>Answer
-                  </button>
-                  <button onClick={handleHangup}
-                    className="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2">
-                    <PhoneOff size={20}/>Decline
-                  </button>
+                <div style={{ display: 'flex', justifyContent: 'space-around', padding: '20px 0' }}>
+                  <RoundButton icon={<PhoneOff size={26} />} label="Decline" bg="#9A3F3F" onClick={handleHangup} />
+                  <RoundButton icon={<Phone size={26} />} label="Answer" bg={T.accent} fg={theme.dark ? T.bg : '#FFFFFF'} onClick={handleAnswer} />
                 </div>
               )}
 
               {(callState === 'connecting' || callState === 'ringing' || callState === 'active') && (
-                <div className="space-y-3">
-                  {callState === 'active' && (
-                    <div className="flex gap-2">
-                      <button onClick={toggleMute}
-                        className={`flex-1 py-3 rounded-xl text-xs font-medium flex items-center justify-center gap-1 ${muted ? 'bg-red-500 text-white' : 'bg-white/10 text-white'}`}>
-                        {muted ? <MicOff size={14}/> : <Mic size={14}/>}{muted ? 'Unmute' : 'Mute'}
-                      </button>
-                      <button className="flex-1 py-3 rounded-xl text-xs font-medium flex items-center justify-center gap-1 bg-white/10 text-white">
-                        <Volume2 size={14}/>Speaker
-                      </button>
+                <div>
+                  {callState === 'active' && !showKeypadDuringCall && (
+                    <div style={{ display: 'flex', justifyContent: 'space-around', padding: '12px 0 24px' }}>
+                      <RoundButton icon={muted ? <MicOff size={22} /> : <Mic size={22} />} label={muted ? 'Unmute' : 'Mute'} bg={muted ? T.accent : T.card} fg={muted ? (theme.dark ? T.bg : '#FFFFFF') : T.text} onClick={toggleMute} small />
+                      <RoundButton icon={<Hand size={22} />} label="Hold" bg={T.card} fg={T.textMuted} onClick={() => {}} small disabled />
+                      <RoundButton icon={speakerOn ? <Volume2 size={22} /> : <VolumeX size={22} />} label="Speaker" bg={!speakerOn ? T.accent : T.card} fg={!speakerOn ? (theme.dark ? T.bg : '#FFFFFF') : T.text} onClick={toggleSpeaker} small />
                     </div>
                   )}
-                  <button onClick={handleHangup}
-                    className="w-full bg-red-500 hover:bg-red-400 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2">
-                    <PhoneOff size={20}/>{callState === 'active' ? 'End Call' : 'Cancel'}
-                  </button>
+                  {callState === 'active' && showKeypadDuringCall && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
+                      {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
+                        <button key={key} onClick={() => sendDtmf(key)}
+                          style={{ ...btn(T.card, T.text), padding: '14px 0', fontSize: '17px', fontWeight: 600 }}>
+                          {key}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {callState === 'active' && (
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                      <RoundButton icon={<Grid3x3 size={20} />} label="Keypad" bg={showKeypadDuringCall ? T.accent : T.card} fg={showKeypadDuringCall ? (theme.dark ? T.bg : '#FFFFFF') : T.text} onClick={() => setShowKeypadDuringCall(s => !s)} small />
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <RoundButton icon={<PhoneOff size={26} />} label={callState === 'active' ? 'End Call' : 'Cancel'} bg="#9A3F3F" onClick={handleHangup} />
+                  </div>
                 </div>
               )}
+            </div>
+          )}
 
-              <div className="mt-4 bg-white/5 rounded-xl px-4 py-3 flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${registered ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}/>
-                <span className="text-blue-200 text-xs">
-                  {registered ? `Ext ${extension} · WebRTC Connected` : 'Click Connect to activate'}
-                </span>
+          {activeTab === 'recent' && (
+            <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+              <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: T.textMuted, fontWeight: 700, marginBottom: '16px' }}>Recent Calls</div>
+              {recentCalls.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {recentCalls.map((cdr: any) => (
+                    <div key={cdr.id} onClick={() => callBack(cdr.from_number)}
+                      style={{ background: T.panel, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', borderRadius: '12px', border: `1px solid ${T.border}` }}>
+                      <Phone size={16} style={{ color: T.accent, flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '15px', fontWeight: 600 }}>{cdr.from_number}</div>
+                        {cdr.ai_summary && <div style={{ fontSize: '12px', color: T.textMuted, marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cdr.ai_summary}</div>}
+                      </div>
+                      <div style={{ textAlign: 'right', fontSize: '11px', color: T.textMuted, flexShrink: 0 }}>
+                        <div>{cdr.duration_sec}s</div>
+                        <div>{new Date(cdr.created_at).toLocaleTimeString()}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '64px 24px', color: T.textMuted }}>
+                  <Clock size={28} style={{ opacity: 0.3, marginBottom: '8px' }} />
+                  <div style={{ fontSize: '13px' }}>No recent calls</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
+            <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+              <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: T.textMuted, fontWeight: 700, marginBottom: '16px' }}>Extensions</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '24px' }}>
+                {dbExtensions.map(e => (
+                  <button key={e.id} onClick={() => { setExtension(e.extension_number); setPassword(e.sip_password || 'ULdefault!') }}
+                    style={{ ...btn(extension === e.extension_number ? T.accent : T.panel, extension === e.extension_number ? (theme.dark ? T.bg : '#FFFFFF') : T.text), padding: '14px', textAlign: 'left', border: `2px solid ${extension === e.extension_number ? T.accent : T.border}`, borderRadius: '12px', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                    <span style={{ fontWeight: 700, fontSize: '14px' }}>Ext. {e.extension_number}</span>
+                    <span style={{ fontSize: '12px', opacity: 0.7 }}>{e.display_name}</span>
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: T.textMuted, fontWeight: 700, marginBottom: '12px' }}>Connection</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', color: T.textMuted, display: 'block', marginBottom: '4px' }}>Extension</label>
+                  <input value={extension} onChange={e => setExtension(e.target.value)}
+                    style={{ width: '100%', background: T.panel, border: `1px solid ${T.border}`, borderRadius: '8px', padding: '10px 12px', color: T.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: T.textMuted, display: 'block', marginBottom: '4px' }}>Password</label>
+                  <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                    style={{ width: '100%', background: T.panel, border: `1px solid ${T.border}`, borderRadius: '8px', padding: '10px 12px', color: T.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: T.textMuted, display: 'block', marginBottom: '4px' }}>SIP Domain</label>
+                  <input value={sipDomain} onChange={e => setSipDomain(e.target.value)}
+                    style={{ width: '100%', background: T.panel, border: `1px solid ${T.border}`, borderRadius: '8px', padding: '10px 12px', color: T.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+                <button onClick={initSIP} disabled={connecting || !extension}
+                  style={{ ...btn(T.accent, theme.dark ? T.bg : '#FFFFFF'), padding: '14px', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', marginTop: '4px', opacity: connecting ? 0.6 : 1 }}>
+                  {connecting ? 'Connecting…' : registered ? 'Re-connect' : 'Connect'}
+                </button>
               </div>
             </div>
-          </div>
+          )}
 
-          <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-            <h3 className="font-semibold text-gray-900 text-sm mb-3">Ring Groups</h3>
-            <div className="space-y-2">
-              {[{name:'All Staff',num:'2000'},{name:'Sales Team',num:'2001'},{name:'Support',num:'2002'},{name:'Management',num:'2003'}].map(({name,num})=>(
-                <button key={num} onClick={() => setDialNumber(num)}
-                  className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition text-left">
-                  <div className="w-2.5 h-2.5 rounded-full bg-blue-400"/>
-                  <div className="flex-1"><p className="text-sm font-medium text-gray-900">{name}</p></div>
-                  <span className="text-xs text-gray-400 font-mono">{num}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+          {activeTab === 'voicemail' && <ComingSoon icon={Voicemail} label="Voicemail" note="Voicemail messages will appear here." color={T.textMuted} accent={T.accent} />}
+          {activeTab === 'contacts' && <ComingSoon icon={Users} label="Contacts" note="Saved contacts will appear here soon." color={T.textMuted} accent={T.accent} />}
+        </main>
 
-        <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Recent Calls</h3>
-              <span className="text-xs text-gray-400">Click to call back</span>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {recentCalls.length > 0 ? recentCalls.map(cdr => (
-                <div key={cdr.id} className="p-4 flex items-center gap-4 hover:bg-gray-50">
-                  <div className={`p-2 rounded-lg ${cdr.direction==='inbound'?'bg-green-100':'bg-blue-100'}`}>
-                    <Phone size={16} className={cdr.direction==='inbound'?'text-green-600':'text-blue-600'}/>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 text-sm">{cdr.from_number}</p>
-                    {cdr.ai_summary&&<p className="text-xs text-gray-500 truncate mt-0.5">{cdr.ai_summary}</p>}
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-xs text-gray-500">{cdr.duration_sec}s</p>
-                    <p className="text-xs text-gray-400">{new Date(cdr.created_at).toLocaleTimeString()}</p>
-                  </div>
-                  <button onClick={() => setDialNumber(cdr.from_number)}
-                    className="p-2 text-gray-400 hover:text-[#0C2C68] hover:bg-blue-50 rounded-lg transition flex-shrink-0">
-                    <Phone size={14}/>
-                  </button>
-                </div>
-              )) : (
-                <div className="text-center py-12 text-gray-400">
-                  <Phone size={32} className="mx-auto mb-2 opacity-30"/>
-                  <p className="text-sm">No recent calls</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-[#0C2C68] to-[#1A56C4] rounded-xl p-5 text-white">
-            <h4 className="font-semibold mb-3">Your Extensions</h4>
-            <div className="grid grid-cols-2 gap-3">
-              {dbExtensions.map((e) => (
-                <div key={e.id} className="bg-white/10 rounded-xl p-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono font-bold text-sm">Ext. {e.extension_number}</span>
-                    <span className="text-blue-200 text-xs">{e.display_name}</span>
-                  </div>
-                  <p className="text-blue-300 text-xs font-mono">{e.mobile || ""}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Bottom tab bar */}
+        <nav style={{ display: 'flex', borderTop: `1px solid ${T.border}`, background: T.navBg }}>
+          {TABS.map(({ key, label, icon: Icon }) => (
+            <button key={key} onClick={() => setActiveTab(key)}
+              style={{
+                flex: 1, background: 'transparent', border: 'none', padding: '12px 0 10px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                color: activeTab === key ? T.accent : T.textMuted, cursor: 'pointer',
+              }}>
+              <Icon size={20} />
+              <span style={{ fontSize: '10px', letterSpacing: '0.02em' }}>{label}</span>
+            </button>
+          ))}
+        </nav>
       </div>
+      <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
+    </div>
+  )
+}
+
+function RoundButton({ icon, label, bg, fg = '#FFFFFF', onClick, small, disabled }: {
+  icon: React.ReactNode; label: string; bg: string; fg?: string
+  onClick: () => void; small?: boolean; disabled?: boolean
+}) {
+  const size = small ? 56 : 72
+  return (
+    <button onClick={disabled ? undefined : onClick} disabled={disabled}
+      style={{ background: 'transparent', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1 }}>
+      <div style={{ width: `${size}px`, height: `${size}px`, borderRadius: '50%', background: bg, color: fg, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
+        {icon}
+      </div>
+      <span style={{ fontSize: '11px', letterSpacing: '0.02em' }}>{label}</span>
+    </button>
+  )
+}
+
+function ComingSoon({ icon: Icon, label, note, color, accent }: { icon: any; label: string; note: string; color: string; accent: string }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '80px 24px', color }}>
+      <Icon size={32} style={{ opacity: 0.3, marginBottom: '12px', color: accent }} />
+      <div style={{ fontSize: '18px', fontWeight: 600, marginBottom: '6px' }}>{label}</div>
+      <div style={{ fontSize: '13px' }}>{note}</div>
     </div>
   )
 }
