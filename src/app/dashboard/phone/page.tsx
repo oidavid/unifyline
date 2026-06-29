@@ -189,7 +189,15 @@ export default function DashboardPhone() {
   const [showSettings, setShowSettings] = useState(false)
   const [recentCalls, setRecentCalls] = useState<any[]>([])
   const [dbExtensions, setDbExtensions] = useState<any[]>([])
-  const [theme, setTheme] = useState<TenantTheme>(buildTheme('#0C2C68'))
+  // Read theme from CSS variable injected by server layout — zero flash on paint
+  const getInitialTheme = (): TenantTheme => {
+    if (typeof window !== 'undefined') {
+      const color = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim()
+      if (color) return buildTheme(color)
+    }
+    return buildTheme('#0C2C68')
+  }
+  const [theme, setTheme] = useState<TenantTheme>(getInitialTheme)
   const [ua, setUa] = useState<any>(null)
 
   const timerRef = useRef<any>(null)
@@ -237,11 +245,8 @@ export default function DashboardPhone() {
       const { data: auData } = await supabase.from('account_users').select('account_id').eq('user_id', user.id).single()
       const accId = auData?.account_id || user.id
 
-      const { data: account } = await supabase.from('accounts').select('brand_primary_color, sip_domain').eq('id', accId).single()
-      const primaryColor = account?.brand_primary_color || '#0C2C68'
+      const { data: account } = await supabase.from('accounts').select('sip_domain').eq('id', accId).single()
       const domain = account?.sip_domain || SIP_TRANSPORT_HOST
-
-      setTheme(buildTheme(primaryColor))
       setSipDomain(domain)
 
       const { data: exts } = await supabase.from('extensions').select('*').eq('account_id', accId).order('extension_number')
