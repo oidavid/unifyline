@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
             to: e164,
           })
         }
-        results.sms = `sent to ${alertPhones.length} number(s)`
+        results.sms = `sent to ${alertPhones.length} number(s): ${alertPhones.map((p: string) => toE164(p)).join(', ')}`
       } catch (e: any) {
         console.error('[alert SMS]', e.message)
         results.sms = `failed: ${e.message}`
