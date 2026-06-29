@@ -79,7 +79,7 @@ export default async function AccountPage() {
       {/* Plan card */}
       <div
         className="rounded-xl p-5 mb-6 text-white"
-        style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}BB)` }}
+        style={{ background: isDark ? "linear-gradient(135deg, #1C1813, #2A1F0A)" : `linear-gradient(135deg, ${primaryColor}, ${primaryColor}BB)`, border: isDark ? "1px solid #3A2E1A" : "none" }}
       >
         <div className="flex items-center justify-between">
           <div>
