@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
       }, { onConflict: 'call_uuid' })
 
       await supabase.from('call_sessions').delete().eq('call_uuid', callUuid)
-      return NextResponse.json({ success: true, summary })
+      return NextResponse.json({ success: true, summary, account_id: accountId })
     }
 
     // MAIN CONVERSATION TURN
