@@ -9,11 +9,11 @@ const SIP_TRANSPORT_HOST = '198.58.114.103'
 const WS_URL = `wss://${SIP_TRANSPORT_HOST}:7443`
 
 const ICE_SERVERS = [
+  { urls: 'stun:global.stun.twilio.com:3478' },
   { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
-  { urls: 'stun:stun3.l.google.com:19302' },
-  { urls: 'turn:198.58.114.103:3478', username: 'unifyline', credential: 'UnifyTurn2026!' },
+  { urls: 'turn:global.turn.twilio.com:3478?transport=udp', username: '3aa6ae38e43abe1a127c569d921ad68a267b996ae553564447152f179019ad2e', credential: '//o5xV+aPOomK3Tmd4MR9K6agqpU3j7VlvIbkSAKbA8=' },
+  { urls: 'turn:global.turn.twilio.com:3478?transport=tcp', username: '3aa6ae38e43abe1a127c569d921ad68a267b996ae553564447152f179019ad2e', credential: '//o5xV+aPOomK3Tmd4MR9K6agqpU3j7VlvIbkSAKbA8=' },
+  { urls: 'turn:global.turn.twilio.com:443?transport=tcp', username: '3aa6ae38e43abe1a127c569d921ad68a267b996ae553564447152f179019ad2e', credential: '//o5xV+aPOomK3Tmd4MR9K6agqpU3j7VlvIbkSAKbA8=' },
   { urls: 'turns:198.58.114.103:5349', username: 'unifyline', credential: 'UnifyTurn2026!' },
 ]
 
