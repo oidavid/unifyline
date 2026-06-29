@@ -2,7 +2,7 @@
 import React from 'react'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { Phone, Plus, Trash2, Save, CheckCircle, XCircle, X } from 'lucide-react'
+import { Phone, Plus, Trash2, Save, CheckCircle, XCircle, X, Pencil } from 'lucide-react'
 
 interface Extension {
   id?: string
@@ -24,6 +24,8 @@ export default function ExtensionsPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [saving, setSaving] = useState(false)
   const [accentColor, setAccentColor] = useState('#0C2C68')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editValues, setEditValues] = useState<Partial<Extension>>({})
   const [newExt, setNewExt] = useState<Extension>({
     name: '', extension: '', email: '', mobile: '',
     ring_group: 'All Staff', active: true, role: 'agent'
@@ -31,7 +33,6 @@ export default function ExtensionsPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    // Read accent from CSS variable set by server layout — no flash, no extra fetch
     const w = window as any
     const color = w.__BRAND?.color || getComputedStyle(document.documentElement).getPropertyValue('--brand').trim()
     if (color) setAccentColor(color)
@@ -70,12 +71,40 @@ export default function ExtensionsPage() {
     load()
   }
 
+  function startEdit(ext: Extension) {
+    setEditingId(ext.id || null)
+    setEditValues({
+      display_name: ext.display_name || ext.name || '',
+      email: ext.email || '',
+      mobile: ext.mobile || '',
+      ring_group: ext.ring_group || 'All Staff',
+      role: ext.role || 'agent',
+    })
+  }
+
+  async function saveEdit(ext: Extension) {
+    if (!ext.id) return
+    setSaving(true)
+    await supabase.from('extensions').update({
+      display_name: editValues.display_name,
+      email: editValues.email,
+      mobile: editValues.mobile,
+      ring_group: editValues.ring_group,
+      role: editValues.role,
+    }).eq('id', ext.id)
+    setEditingId(null)
+    setEditValues({})
+    setSaving(false)
+    load()
+  }
+
   async function toggleActive(ext: Extension) {
     await supabase.from('extensions').update({ active: !ext.active }).eq('id', ext.id)
     load()
   }
 
   async function del(id: string) {
+    if (!confirm('Delete this extension?')) return
     await supabase.from('extensions').delete().eq('id', id)
     load()
   }
@@ -105,7 +134,7 @@ export default function ExtensionsPage() {
         </button>
       </div>
 
-      {/* Info banner — uses CSS var so it's always correct color */}
+      {/* Info banner */}
       <div className="rounded-xl p-4 md:p-5 text-white mb-5" style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}CC)` }}>
         <h3 className="font-semibold mb-2 text-sm md:text-base">How Extensions Work</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm opacity-90">
@@ -136,7 +165,6 @@ export default function ExtensionsPage() {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewExt((n: any) => ({ ...n, [field]: e.target.value }))}
                   placeholder={ph}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none placeholder-gray-400"
-                  style={{ outline: 'none' }}
                   onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = accentColor}
                   onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#E5E7EB'}
                 />
@@ -174,37 +202,113 @@ export default function ExtensionsPage() {
       {extensions.length > 0 ? (
         <div className="space-y-3">
           {extensions.map((ext: any) => (
-            <div key={ext.id} className={`bg-white rounded-xl border shadow-sm p-4 ${!ext.active ? 'opacity-60' : ''}`}>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 text-white"
-                  style={{ background: ext.active ? accentColor : '#D1D5DB' }}>
-                  {extName(ext).charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-gray-900 text-sm">{extName(ext)}</span>
-                    <span className="px-2 py-0.5 rounded text-xs font-mono font-bold text-white"
+            <div key={ext.id} className={`bg-white rounded-xl border shadow-sm ${!ext.active ? 'opacity-60' : ''} ${editingId === ext.id ? 'border-2' : 'border-gray-100'}`}
+              style={editingId === ext.id ? { borderColor: accentColor } : {}}>
+
+              {editingId === ext.id ? (
+                /* EDIT MODE */
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-900 text-sm">Editing Ext. {extNum(ext)}</span>
+                    </div>
+                    <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600">
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                      <input
+                        value={editValues.display_name || ''}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditValues((v: any) => ({ ...v, display_name: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                        onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = accentColor}
+                        onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#E5E7EB'}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                      <input
+                        value={editValues.email || ''}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditValues((v: any) => ({ ...v, email: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                        onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = accentColor}
+                        onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#E5E7EB'}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Mobile</label>
+                      <input
+                        value={editValues.mobile || ''}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditValues((v: any) => ({ ...v, mobile: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                        onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = accentColor}
+                        onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = '#E5E7EB'}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Ring Group</label>
+                      <select
+                        value={editValues.ring_group || 'All Staff'}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEditValues((v: any) => ({ ...v, ring_group: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                        {GROUPS.map(g => <option key={g}>{g}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => saveEdit(ext)}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 text-white px-3 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
                       style={{ background: accentColor }}>
-                      Ext. {extNum(ext)}
-                    </span>
-                    {ext.ring_group && (
-                      <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs hidden sm:inline">{ext.ring_group}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 flex-wrap">
-                    {ext.email && <span className="truncate max-w-[160px]">{ext.email}</span>}
-                    {ext.mobile && <span className="font-mono">{ext.mobile}</span>}
+                      <Save size={13} />{saving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                    <button onClick={() => setEditingId(null)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">
+                      Cancel
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <button onClick={() => toggleActive(ext)}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium ${ext.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {ext.active ? <CheckCircle size={11} /> : <XCircle size={11} />}
-                    <span className="hidden sm:inline">{ext.active ? 'Active' : 'Off'}</span>
-                  </button>
-                  <button onClick={() => del(ext.id!)} className="text-gray-300 hover:text-red-500 p-1.5"><Trash2 size={14} /></button>
+              ) : (
+                /* VIEW MODE */
+                <div className="flex items-center gap-3 p-4">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 text-white"
+                    style={{ background: ext.active ? accentColor : '#D1D5DB' }}>
+                    {extName(ext).charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-gray-900 text-sm">{extName(ext)}</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-mono font-bold text-white"
+                        style={{ background: accentColor }}>
+                        Ext. {extNum(ext)}
+                      </span>
+                      {ext.ring_group && (
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs hidden sm:inline">{ext.ring_group}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 flex-wrap">
+                      {ext.email && <span className="truncate max-w-[160px]">{ext.email}</span>}
+                      {ext.mobile && <span className="font-mono">{ext.mobile}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button
+                      onClick={() => startEdit(ext)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition"
+                      title="Edit extension">
+                      <Pencil size={14} />
+                    </button>
+                    <button onClick={() => toggleActive(ext)}
+                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium ${ext.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {ext.active ? <CheckCircle size={11} /> : <XCircle size={11} />}
+                      <span className="hidden sm:inline">{ext.active ? 'Active' : 'Off'}</span>
+                    </button>
+                    <button onClick={() => del(ext.id!)} className="text-gray-300 hover:text-red-500 p-1.5"><Trash2 size={14} /></button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ))}
         </div>

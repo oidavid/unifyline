@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState, useEffect, useRef } from 'react'
 import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Delete, Wifi, WifiOff, Grid3x3, Settings as SettingsIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
@@ -9,11 +9,9 @@ const SIP_TRANSPORT_HOST = '198.58.114.103'
 const WS_URL = `wss://${SIP_TRANSPORT_HOST}:7443`
 
 const ICE_SERVERS = [
-  { urls: 'stun:global.stun.twilio.com:3478' },
   { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'turn:global.turn.twilio.com:3478?transport=udp', username: '3aa6ae38e43abe1a127c569d921ad68a267b996ae553564447152f179019ad2e', credential: '//o5xV+aPOomK3Tmd4MR9K6agqpU3j7VlvIbkSAKbA8=' },
-  { urls: 'turn:global.turn.twilio.com:3478?transport=tcp', username: '3aa6ae38e43abe1a127c569d921ad68a267b996ae553564447152f179019ad2e', credential: '//o5xV+aPOomK3Tmd4MR9K6agqpU3j7VlvIbkSAKbA8=' },
-  { urls: 'turn:global.turn.twilio.com:443?transport=tcp', username: '3aa6ae38e43abe1a127c569d921ad68a267b996ae553564447152f179019ad2e', credential: '//o5xV+aPOomK3Tmd4MR9K6agqpU3j7VlvIbkSAKbA8=' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'turn:198.58.114.103:3478', username: 'unifyline', credential: 'UnifyTurn2026!' },
   { urls: 'turns:198.58.114.103:5349', username: 'unifyline', credential: 'UnifyTurn2026!' },
 ]
 
@@ -77,14 +75,14 @@ function buildTheme(primaryColor: string): TenantTheme {
       callBtnText: '#0A0A0A',
       statusBg: 'rgba(232,194,106,0.15)',
       statusText: '#E8C26A',
-      panelBg: '#1A150E',
-      panelBorder: '#3A3020',
-      panelText: '#FFFFFF',
-      panelSubtext: '#D4C5A0',
+      panelBg: '#1C1813',
+      panelBorder: '#2A241A',
+      panelText: '#F7F5F0',
+      panelSubtext: '#B8AE96',
       extCardBg: '#1C1813',
       extCardItemBg: 'rgba(232,194,106,0.12)',
-      extCardText: '#FFFFFF',
-      extCardSubtext: '#F0D080',
+      extCardText: '#F7F5F0',
+      extCardSubtext: '#E8C26A',
       accentBg: '#E8C26A',
       accentText: '#0A0A0A',
       accentHover: '#C9A23F',
@@ -136,11 +134,22 @@ function buildTheme(primaryColor: string): TenantTheme {
   }
 }
 
+function getDynamicICE() {
+  const dynamic = (window as any).__TURN_SERVERS
+  if (dynamic && Array.isArray(dynamic)) {
+    return dynamic.map((s: any) => ({
+      urls: s.urls || s.url,
+      username: s.username,
+      credential: s.credential,
+    }))
+  }
+  return ICE_SERVERS
+}
+
 function patchedCall<T>(fn: () => T): T {
   const NativePC = window.RTCPeerConnection
   function PatchedPC(this: any, config: RTCConfiguration) {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-    return new NativePC({ ...config, iceServers: ICE_SERVERS, iceTransportPolicy: isMobile ? 'relay' : 'all' })
+    return new NativePC({ ...config, iceServers: ICE_SERVERS, iceTransportPolicy: 'all' })
   }
   PatchedPC.prototype = NativePC.prototype
   ;(PatchedPC as any).generateCertificate = NativePC.generateCertificate?.bind(NativePC)
@@ -234,6 +243,17 @@ export default function PhoneClient({ initialColor }: { initialColor: string }) 
   }
 
   async function loadTenantData() {
+    // Fetch fresh TURN credentials from Twilio API
+    try {
+      const turnRes = await fetch('/api/turn-credentials')
+      if (turnRes.ok) {
+        const turnData = await turnRes.json()
+        if (turnData?.iceServers) {
+          // Update ICE servers dynamically
+          ;(window as any).__TURN_SERVERS = turnData.iceServers
+        }
+      }
+    } catch (e) { console.warn('[TURN refresh]', e) }
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -252,9 +272,13 @@ export default function PhoneClient({ initialColor }: { initialColor: string }) 
         setPassword(exts[0].sip_password || `UL${exts[0].extension_number}secure!`)
       }
 
+      // Use API route to bypass RLS on CDRs
       try {
         const res = await fetch(`/api/recent-calls?account_id=${accId}&limit=8`)
-        if (res.ok) { const calls = await res.json(); setRecentCalls(calls || []) }
+        if (res.ok) {
+          const calls = await res.json()
+          setRecentCalls(calls || [])
+        }
       } catch (e) { console.warn('[recentCalls]', e) }
     } catch (e) { console.error('[loadTenantData]', e) }
   }
