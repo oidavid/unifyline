@@ -8,6 +8,18 @@ const admin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+function toE164(phone: string): string {
+  const cleaned = phone.trim()
+  // Already in E.164 format
+  if (cleaned.startsWith('+')) return cleaned
+  // US number without country code
+  const digits = cleaned.replace(/\D/g, '')
+  if (digits.length === 10) return `+1${digits}`
+  if (digits.length === 11 && digits[0] === '1') return `+${digits}`
+  // International without + — assume they included country code digits
+  return `+${digits}`
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -23,12 +35,16 @@ export async function POST(req: NextRequest) {
       .eq('id', account_id)
       .single()
 
-    const alertEmail = (account as any)?.alert_email || process.env.ALERT_EMAIL
-    const alertPhone = (account as any)?.alert_phone || process.env.ALERT_PHONE
+    const alertEmailRaw = (account as any)?.alert_email || process.env.ALERT_EMAIL || ''
+    const alertPhoneRaw = (account as any)?.alert_phone || process.env.ALERT_PHONE || ''
     const accountName = (account as any)?.name || 'Your Business'
     const brandColor = (account as any)?.brand_primary_color || '#0C2C68'
     const isDark = ['#1A1008', '#0A0A0A', '#1C1813'].includes(brandColor)
     const headerColor = isDark ? '#C9A23F' : brandColor
+
+    // Support multiple recipients comma-separated
+    const alertEmails = alertEmailRaw.split(',').map((e: string) => e.trim()).filter((e: string) => e.includes('@'))
+    const alertPhones = alertPhoneRaw.split(',').map((p: string) => p.trim()).filter((p: string) => p.length > 3)
 
     const isHotLead = alert_type === 'hot_lead'
 
@@ -66,34 +82,38 @@ export async function POST(req: NextRequest) {
 
     const results: Record<string, string> = {}
 
-    if (process.env.TWILIO_ACCOUNT_SID && alertPhone) {
+    // Send SMS to all phone numbers (international E.164 support)
+    if (process.env.TWILIO_ACCOUNT_SID && alertPhones.length > 0) {
       try {
         const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-        const toNumber = alertPhone.startsWith('+') ? alertPhone : `+1${alertPhone.replace(/\D/g, '')}`
-        await twilioClient.messages.create({
-          body: smsBody,
-          from: process.env.TWILIO_PHONE_NUMBER!,
-          to: toNumber,
-        })
-        results.sms = 'sent'
+        for (const phone of alertPhones) {
+          const e164 = toE164(phone)
+          await twilioClient.messages.create({
+            body: smsBody,
+            from: process.env.TWILIO_PHONE_NUMBER!,
+            to: e164,
+          })
+        }
+        results.sms = `sent to ${alertPhones.length} number(s)`
       } catch (e: any) {
         console.error('[alert SMS]', e.message)
         results.sms = `failed: ${e.message}`
       }
     }
 
-    if (process.env.RESEND_API_KEY && alertEmail) {
+    // Send email to all addresses
+    if (process.env.RESEND_API_KEY && alertEmails.length > 0) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY)
         await resend.emails.send({
           from: 'UnifyLine Alerts <briefing@unifyline.com>',
-          to: alertEmail,
+          to: alertEmails,
           subject: isHotLead
             ? `Hot Lead: ${formatted} called ${accountName}`
             : `Call Alert: ${formatted} called ${accountName}`,
           html: emailHtml,
         })
-        results.email = 'sent'
+        results.email = `sent to ${alertEmails.length} address(es)`
       } catch (e: any) {
         console.error('[alert email]', e.message)
         results.email = `failed: ${e.message}`

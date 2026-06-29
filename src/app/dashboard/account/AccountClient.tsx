@@ -112,7 +112,7 @@ export default function AccountClient({ data }: { data: AccountData }) {
               placeholder="you@yourcompany.com"
               className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none"
             />
-            <p className="text-xs text-gray-400 mt-1">Separate multiple emails with commas</p>
+            <p className="text-xs text-gray-400 mt-1">Separate multiple emails with commas. Alerts fire within seconds of a call</p>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Alert Phone (SMS)</label>
@@ -120,10 +120,10 @@ export default function AccountClient({ data }: { data: AccountData }) {
               type="tel"
               value={alertPhone}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAlertPhone(e.target.value)}
-              placeholder="4045551234"
+              placeholder="+1 4045551234 or +234 8012345678"
               className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none"
             />
-            <p className="text-xs text-gray-400 mt-1">10-digit US number, no dashes</p>
+            <p className="text-xs text-gray-400 mt-1">Include country code. Separate multiple numbers with commas</p>
           </div>
         </div>
         {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
