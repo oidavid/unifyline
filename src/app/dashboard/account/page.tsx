@@ -62,7 +62,7 @@ export default async function AccountPage() {
   ]
 
   const features = [
-    'AI Receptionist ΓÇö always on, always answering',
+    'AI Receptionist - always on, always answering',
     'Call summaries and transcripts',
     'Browser softphone (WebRTC)',
     'Team extensions',
