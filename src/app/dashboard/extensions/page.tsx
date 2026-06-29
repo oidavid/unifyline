@@ -1,4 +1,5 @@
 'use client'
+import React from 'react'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { Phone, Plus, Trash2, Save, CheckCircle, XCircle, X } from 'lucide-react'
@@ -31,7 +32,8 @@ export default function ExtensionsPage() {
 
   useEffect(() => {
     // Read accent from CSS variable set by server layout — no flash, no extra fetch
-    const color = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim()
+    const w = window as any
+    const color = w.__BRAND?.color || getComputedStyle(document.documentElement).getPropertyValue('--brand').trim()
     if (color) setAccentColor(color)
     load()
   }, [])

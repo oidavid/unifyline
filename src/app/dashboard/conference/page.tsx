@@ -13,7 +13,8 @@ export default function ConferencePage() {
 
   useEffect(() => {
     // Pull accent color from server-injected CSS variable — no extra fetch, no flash
-    const color = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim()
+    const w = window as any
+    const color = w.__BRAND?.color || getComputedStyle(document.documentElement).getPropertyValue('--brand').trim()
     if (color) setAccentColor(color)
     loadDids()
   }, [])

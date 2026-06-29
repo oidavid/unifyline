@@ -28,7 +28,6 @@ async function getTenantBrand() {
 
     const firstName = profile?.first_name || profile?.full_name?.split(' ')[0] || user.email?.split('@')[0] || 'User'
     const lastName = profile?.last_name || profile?.full_name?.split(' ')[1] || ''
-
     const primaryColor = account?.brand_primary_color || '#0C2C68'
     const isDark = ['#1A1008', '#0A0A0A', '#1C1813', '#0F0C08'].includes(primaryColor)
 
@@ -53,9 +52,9 @@ export default async function DashboardLayout({ children }: { children: import('
 
   const bg = brand!.primaryColor
   const isDark = brand!.isDark
+  const accent = isDark ? '#E8C26A' : '#FFFFFF'
 
-  // These styles are injected server-side into <head> before the first paint.
-  // This is what eliminates the blue flash — the browser never renders without the correct color.
+  // CSS injected server-side — sidebar and layout colors are correct before first paint
   const themeCSS = `
     :root {
       --brand: ${bg};
@@ -63,16 +62,19 @@ export default async function DashboardLayout({ children }: { children: import('
       --brand-muted: ${isDark ? '#B8AE96' : 'rgba(255,255,255,0.6)'};
       --brand-active: ${isDark ? 'rgba(232,194,106,0.2)' : 'rgba(255,255,255,0.2)'};
       --brand-hover: ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.1)'};
-      --brand-accent: ${isDark ? '#E8C26A' : '#FFFFFF'};
+      --brand-accent: ${accent};
     }
     .sidebar-bg { background-color: ${bg} !important; }
-    .brand-accent-text { color: ${isDark ? '#E8C26A' : '#FFFFFF'} !important; }
-    .brand-active-bg { background: ${isDark ? 'rgba(232,194,106,0.2)' : 'rgba(255,255,255,0.2)'} !important; }
   `
+
+  // Inline script sets window.__BRAND before React hydrates any client component.
+  // This is the only reliable way to pass server-known values to useState initializers.
+  const brandScript = `window.__BRAND={color:"${bg}",isDark:${isDark},accent:"${accent}"}`
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: themeCSS }} />
+      <script dangerouslySetInnerHTML={{ __html: brandScript }} />
       <DashboardLayoutClient brand={brand!}>
         {children}
       </DashboardLayoutClient>

@@ -189,11 +189,15 @@ export default function DashboardPhone() {
   const [showSettings, setShowSettings] = useState(false)
   const [recentCalls, setRecentCalls] = useState<any[]>([])
   const [dbExtensions, setDbExtensions] = useState<any[]>([])
-  // Read theme from CSS variable injected by server layout — zero flash on paint
+  // window.__BRAND is set by an inline <script> in layout.tsx before React hydrates.
+  // This means the correct tenant theme is available synchronously — zero flash guaranteed.
   const getInitialTheme = (): TenantTheme => {
     if (typeof window !== 'undefined') {
-      const color = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim()
-      if (color) return buildTheme(color)
+      const w = window as any
+      if (w.__BRAND?.color) return buildTheme(w.__BRAND.color)
+      // Fallback: CSS variable (available after first paint)
+      const cssColor = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim()
+      if (cssColor) return buildTheme(cssColor)
     }
     return buildTheme('#0C2C68')
   }
