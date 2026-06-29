@@ -29,7 +29,8 @@ async function getAccountData() {
   const withSummary = allCalls.filter((c: any) => c.ai_summary)
 
   return {
-    planName: account?.plan || 'Beta',
+    accountName: account?.name || 'Your Account',
+    planName: account?.plan || 'Enterprise Beta',
     memberSince: account?.created_at
       ? new Date(account.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
       : null,
@@ -37,7 +38,6 @@ async function getAccountData() {
     usage: {
       totalCalls: allCalls.length,
       aiHandled: withSummary.length,
-      // Calls where AI generated a summary = qualified lead captured
       leadsCaptured: withSummary.length,
       activeDids: dids?.length || 0,
     }
@@ -48,9 +48,15 @@ export default async function AccountPage() {
   const data = await getAccountData()
   if (!data) redirect('/auth/login')
 
-  const { planName, memberSince, primaryColor, usage } = data!
+  const { accountName, planName, memberSince, primaryColor, usage } = data!
   const isDark = ['#1A1008', '#0A0A0A', '#1C1813', '#0F0C08'].includes(primaryColor)
-  const accentColor = isDark ? '#E8C26A' : primaryColor
+
+  const cardGradient = isDark
+    ? 'linear-gradient(135deg, #E8C26A 0%, #C9A23F 50%, #A67C20 100%)'
+    : `linear-gradient(135deg, ${primaryColor}, ${primaryColor}BB)`
+  const cardTextColor = isDark ? '#0A0A0A' : '#FFFFFF'
+  const cardSubTextColor = isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.7)'
+  const accentColor = isDark ? '#C9A23F' : primaryColor
 
   const stats = [
     { label: 'Total Calls', value: usage.totalCalls, icon: Phone, tip: 'All inbound calls' },
@@ -60,7 +66,7 @@ export default async function AccountPage() {
   ]
 
   const features = [
-    'AI Receptionist â€” always on, always answering',
+    'AI Receptionist — always on, always answering',
     'Call summaries and transcripts',
     'Browser softphone (WebRTC)',
     'Team extensions',
@@ -73,30 +79,28 @@ export default async function AccountPage() {
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
       <div className="mb-6">
         <h2 className="text-xl md:text-2xl font-bold text-gray-900">Account</h2>
-        <p className="text-gray-500 mt-1 text-sm">Your plan and usage at a glance</p>
+        <p className="text-gray-500 mt-1 text-sm">{accountName} — plan and usage overview</p>
       </div>
 
-      {/* Plan card */}
-      <div
-        className="rounded-xl p-5 mb-6 text-white"
-        style={{ background: isDark ? "linear-gradient(135deg, #1C1813, #2A1F0A)" : `linear-gradient(135deg, ${primaryColor}, ${primaryColor}BB)`, border: isDark ? "1px solid #3A2E1A" : "none" }}
-      >
+      <div className="rounded-xl p-5 mb-6" style={{ background: cardGradient }}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm opacity-80 mb-1">Current Plan</p>
-            <p className="text-2xl font-bold">{planName}</p>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: cardSubTextColor }}>
+              Current Plan
+            </p>
+            <p className="text-2xl font-bold" style={{ color: cardTextColor }}>{planName}</p>
             {memberSince && (
-              <p className="text-sm opacity-70 mt-1">Member since {memberSince}</p>
+              <p className="text-sm mt-1" style={{ color: cardSubTextColor }}>Member since {memberSince}</p>
             )}
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 rounded-full">
-            <div className="w-2 h-2 rounded-full bg-green-300 animate-pulse" />
-            <span className="text-sm font-medium">Active</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+            style={{ background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)' }}>
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-sm font-semibold" style={{ color: cardTextColor }}>Active</span>
           </div>
         </div>
       </div>
 
-      {/* Usage stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {stats.map(({ label, value, icon: Icon, tip }) => (
           <div key={label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
@@ -110,7 +114,6 @@ export default async function AccountPage() {
         ))}
       </div>
 
-      {/* Features */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <h3 className="font-semibold text-gray-900 mb-4">What's included</h3>
         <div className="space-y-3">
