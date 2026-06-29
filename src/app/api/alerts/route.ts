@@ -110,8 +110,8 @@ export async function POST(req: NextRequest) {
           from: 'UnifyLine Alerts <briefing@unifyline.com>',
           to: alertEmails,
           subject: isHotLead
-            ? `Hot Lead: ${formatted} called ${accountName}`
-            : `Call Alert: ${formatted} called ${accountName}`,
+            ? `Hot Lead: ${formatted} called ${accountName} - ${new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' })} ET`
+            : `Call Alert: ${formatted} called ${accountName} - ${new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' })} ET`,
           html: emailHtml,
         })
         results.email = `sent to ${alertEmails.length} address(es)`
