@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+﻿import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -53,7 +53,7 @@ export default async function DashboardPage() {
   // Use first_name from profile, fall back to first word of full_name, then email prefix
   const firstName = profile?.first_name
     || profile?.full_name?.split(' ')[0]
-    || user.email?.split('@')[0]
+    || account?.name
     || 'there'
 
   const testNumberLine = primaryDid

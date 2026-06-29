@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef } from 'react'
 import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Delete, Wifi, WifiOff, Grid3x3, Settings as SettingsIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
@@ -249,10 +249,10 @@ export default function PhoneClient({ initialColor }: { initialColor: string }) 
         setPassword(exts[0].sip_password || `UL${exts[0].extension_number}secure!`)
       }
 
-      const { data: calls } = await supabase
-        .from('call_detail_records').select('*').eq('account_id', accId)
-        .order('created_at', { ascending: false }).limit(8)
-      setRecentCalls(calls || [])
+      try {
+        const res = await fetch(`/api/recent-calls?account_id=${accId}&limit=8`)
+        if (res.ok) { const calls = await res.json(); setRecentCalls(calls || []) }
+      } catch (e) { console.warn('[recentCalls]', e) }
     } catch (e) { console.error('[loadTenantData]', e) }
   }
 
