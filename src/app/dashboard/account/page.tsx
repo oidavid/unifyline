@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
-import { Phone, Mic, Clock, CheckCircle } from 'lucide-react'
+import { Phone, Mic, Target, Hash, CheckCircle } from 'lucide-react'
 
 async function getAccountData() {
   const supabase = await createServerSupabaseClient()
@@ -25,9 +25,8 @@ async function getAccountData() {
     admin.from('account_phone_numbers').select('did_number').eq('account_id', accId),
   ])
 
-  const totalMinutes = Math.round(
-    (cdrs || []).reduce((sum: number, c: any) => sum + (c.duration_sec || 0), 0) / 60
-  )
+  const allCalls = cdrs || []
+  const withSummary = allCalls.filter((c: any) => c.ai_summary)
 
   return {
     planName: account?.plan || 'Beta',
@@ -36,10 +35,11 @@ async function getAccountData() {
       : null,
     primaryColor: account?.brand_primary_color || '#0C2C68',
     usage: {
-      calls: cdrs?.length || 0,
-      aiCalls: cdrs?.filter((c: any) => c.ai_summary)?.length || 0,
-      minutes: totalMinutes,
-      dids: dids?.length || 0,
+      totalCalls: allCalls.length,
+      aiHandled: withSummary.length,
+      // Calls where AI generated a summary = qualified lead captured
+      leadsCaptured: withSummary.length,
+      activeDids: dids?.length || 0,
     }
   }
 }
@@ -53,10 +53,10 @@ export default async function AccountPage() {
   const accentColor = isDark ? '#E8C26A' : primaryColor
 
   const stats = [
-    { label: 'Total Calls', value: usage.calls, icon: Phone },
-    { label: 'AI Handled', value: usage.aiCalls, icon: Mic },
-    { label: 'Minutes Used', value: usage.minutes, icon: Clock },
-    { label: 'Active DIDs', value: usage.dids, icon: CheckCircle },
+    { label: 'Total Calls', value: usage.totalCalls, icon: Phone, tip: 'All inbound calls' },
+    { label: 'AI Handled', value: usage.aiHandled, icon: Mic, tip: 'Calls Aria answered' },
+    { label: 'Leads Captured', value: usage.leadsCaptured, icon: Target, tip: 'Calls with AI summary' },
+    { label: 'Active DIDs', value: usage.activeDids, icon: Hash, tip: 'Phone lines' },
   ]
 
   const features = [
@@ -98,13 +98,14 @@ export default async function AccountPage() {
 
       {/* Usage stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {stats.map(({ label, value, icon: Icon }) => (
+        {stats.map(({ label, value, icon: Icon, tip }) => (
           <div key={label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Icon size={16} style={{ color: accentColor }} />
+            <div className="flex items-center gap-2 mb-1">
+              <Icon size={15} style={{ color: accentColor }} />
               <p className="text-xs text-gray-500 font-medium">{label}</p>
             </div>
             <p className="text-2xl font-bold text-gray-900">{value}</p>
+            <p className="text-xs text-gray-400 mt-1">{tip}</p>
           </div>
         ))}
       </div>
