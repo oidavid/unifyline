@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY)
         await resend.emails.send({
-          from: 'UnifyLine Alerts <alerts@unifyline.com>',
+          from: 'UnifyLine Alerts <briefing@unifyline.com>',
           to: alertEmail,
           subject: isHotLead
             ? `Hot Lead: ${formatted} called ${accountName}`
