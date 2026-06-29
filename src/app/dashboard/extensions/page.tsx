@@ -142,14 +142,14 @@ export default function ExtensionsPage() {
             ))}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Ring Group</label>
-              <select value={newExt.ring_group} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewExt((n: any) => ({ ...n, ring_group: e.target.value }))}
+              <select value={newExt.ring_group} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewExt((n: any) => ({ ...n, ring_group: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm">
                 {GROUPS.map(g => <option key={g}>{g}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
-              <select value={newExt.role} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewExt((n: any) => ({ ...n, role: e.target.value }))}
+              <select value={newExt.role} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewExt((n: any) => ({ ...n, role: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm">
                 <option value="agent">Agent</option>
                 <option value="manager">Manager</option>
