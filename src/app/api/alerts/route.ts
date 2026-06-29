@@ -40,7 +40,8 @@ export async function POST(req: NextRequest) {
     const accountName = (account as any)?.name || 'Your Business'
     const brandColor = (account as any)?.brand_primary_color || '#0C2C68'
     const isDark = ['#1A1008', '#0A0A0A', '#1C1813'].includes(brandColor)
-    const headerColor = isDark ? '#C9A23F' : brandColor
+    const headerColor = isDark ? '#1C1813' : brandColor
+    const accentColor = isDark ? '#E8C26A' : '#FFFFFF'
 
     // Support multiple recipients comma-separated
     const alertEmails = alertEmailRaw.split(',').map((e: string) => e.trim()).filter((e: string) => e.includes('@'))
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     const emailHtml = `
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#f9fafb">
         <div style="background:${headerColor};padding:20px 24px;border-radius:10px 10px 0 0">
-          <h1 style="color:white;margin:0;font-size:22px">${accountName}</h1>
+          <h1 style="color:${isDark ? accentColor : 'white'};margin:0;font-size:22px">${accountName}</h1>
           <p style="color:rgba(255,255,255,0.75);margin:4px 0 0;font-size:13px">Powered by UnifyLine AI</p>
         </div>
         <div style="background:white;padding:24px;border-radius:0 0 10px 10px;border:1px solid #e5e7eb;border-top:none">
