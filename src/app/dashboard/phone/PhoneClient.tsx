@@ -137,7 +137,8 @@ function buildTheme(primaryColor: string): TenantTheme {
 function patchedCall<T>(fn: () => T): T {
   const NativePC = window.RTCPeerConnection
   function PatchedPC(this: any, config: RTCConfiguration) {
-    return new NativePC({ ...config, iceServers: ICE_SERVERS, iceTransportPolicy: 'all' })
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    return new NativePC({ ...config, iceServers: ICE_SERVERS, iceTransportPolicy: isMobile ? 'relay' : 'all' })
   }
   PatchedPC.prototype = NativePC.prototype
   ;(PatchedPC as any).generateCertificate = NativePC.generateCertificate?.bind(NativePC)
