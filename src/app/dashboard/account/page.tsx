@@ -51,6 +51,8 @@ export default async function AccountPage() {
   const { planName, memberSince, primaryColor, usage } = data!
   const isDark = ['#1A1008', '#0A0A0A', '#1C1813', '#0F0C08'].includes(primaryColor)
   const accentColor = isDark ? '#E8C26A' : primaryColor
+  const iconColor = isDark ? '#1A1008' : primaryColor
+  const featureColor = isDark ? '#6B5A2A' : primaryColor
 
   const stats = [
     { label: 'Total Calls', value: usage.totalCalls, icon: Phone, tip: 'All inbound calls' },
