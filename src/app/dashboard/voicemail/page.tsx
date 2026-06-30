@@ -1,6 +1,6 @@
 'use client'
-import React, { useState, useEffect, useRef } from 'react'
-import { Voicemail, Play, Pause, Trash2, Phone, Download } from 'lucide-react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { Voicemail, Play, Pause, Trash2, Download, ArrowUpDown, Filter } from 'lucide-react'
 
 type VoicemailMsg = {
   id: string
@@ -10,8 +10,9 @@ type VoicemailMsg = {
   extension_name: string
   created_at: string
   size: number
-  read: boolean
 }
+
+type SortKey = 'newest' | 'oldest' | 'longest' | 'shortest'
 
 export default function VoicemailPage() {
   const [messages, setMessages] = useState<VoicemailMsg[]>([])
@@ -19,6 +20,8 @@ export default function VoicemailPage() {
   const [playing, setPlaying] = useState<string | null>(null)
   const [accentColor, setAccentColor] = useState('#0C2C68')
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [sortKey, setSortKey] = useState<SortKey>('newest')
+  const [filterExt, setFilterExt] = useState<string>('all')
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
@@ -44,25 +47,19 @@ export default function VoicemailPage() {
 
   function playMessage(msg: VoicemailMsg) {
     if (playing === msg.id) {
-      // Pause
       audioRef.current?.pause()
       setPlaying(null)
       return
     }
-
-    if (audioRef.current) {
-      audioRef.current.pause()
-    }
+    if (audioRef.current) audioRef.current.pause()
 
     const audio = new Audio(`/api/voicemail-audio?path=${encodeURIComponent(msg.path)}`)
     audioRef.current = audio
-
     audio.onended = () => setPlaying(null)
     audio.onerror = () => {
       setPlaying(null)
-      alert('Could not play voicemail. The audio file may be unavailable.')
+      alert('Could not play voicemail.')
     }
-
     audio.play()
     setPlaying(msg.id)
   }
@@ -95,22 +92,58 @@ export default function VoicemailPage() {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
-  function formatSize(bytes: number) {
-    if (!bytes) return ''
-    const seconds = Math.round(bytes / 16000) // Approximate for PCM WAV
+  function estimateDuration(bytes: number) {
+    if (!bytes) return 0
+    return Math.round(bytes / 16000)
+  }
+
+  function formatDuration(seconds: number) {
     if (seconds < 60) return `${seconds}s`
     return `${Math.floor(seconds / 60)}m ${seconds % 60}s`
   }
 
-  const isDark = ['#1A1008', '#0A0A0A', '#1C1813', '#0F0C08'].includes(accentColor)
+  // Unique extensions for the filter dropdown
+  const extensionOptions = useMemo(() => {
+    const map = new Map<string, string>()
+    messages.forEach((m: VoicemailMsg) => map.set(m.extension, m.extension_name || `Ext ${m.extension}`))
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+  }, [messages])
+
+  const filteredAndSorted = useMemo(() => {
+    let list = filterExt === 'all' ? messages : messages.filter((m: VoicemailMsg) => m.extension === filterExt)
+
+    list = [...list].sort((a, b) => {
+      switch (sortKey) {
+        case 'newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        case 'longest':
+          return estimateDuration(b.size) - estimateDuration(a.size)
+        case 'shortest':
+          return estimateDuration(a.size) - estimateDuration(b.size)
+        default:
+          return 0
+      }
+    })
+
+    return list
+  }, [messages, sortKey, filterExt])
+
+  const sortLabels: Record<SortKey, string> = {
+    newest: 'Newest first',
+    oldest: 'Oldest first',
+    longest: 'Longest first',
+    shortest: 'Shortest first',
+  }
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-xl md:text-2xl font-bold text-gray-900">Voicemail</h2>
           <p className="text-gray-500 mt-1 text-sm">
-            {loading ? 'Loading...' : `${messages.length} message${messages.length !== 1 ? 's' : ''}`}
+            {loading ? 'Loading...' : `${filteredAndSorted.length} of ${messages.length} message${messages.length !== 1 ? 's' : ''}`}
           </p>
         </div>
         <button
@@ -122,6 +155,45 @@ export default function VoicemailPage() {
         </button>
       </div>
 
+      {/* Sort & Filter controls */}
+      {messages.length > 0 && (
+        <div className="flex items-center gap-3 mb-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <ArrowUpDown size={14} className="text-gray-400" />
+            <select
+              value={sortKey}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortKey(e.target.value as SortKey)}
+              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none"
+            >
+              {Object.entries(sortLabels).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter size={14} className="text-gray-400" />
+            <select
+              value={filterExt}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilterExt(e.target.value)}
+              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none"
+            >
+              <option value="all">All extensions</option>
+              {extensionOptions.map(([num, name]: [string, string]) => (
+                <option key={num} value={num}>{name} (Ext. {num})</option>
+              ))}
+            </select>
+          </div>
+          {filterExt !== 'all' && (
+            <button
+              onClick={() => setFilterExt('all')}
+              className="text-xs text-gray-400 hover:text-gray-600 underline"
+            >
+              Clear filter
+            </button>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
           <div className="animate-pulse">
@@ -129,15 +201,21 @@ export default function VoicemailPage() {
             <p className="text-gray-400 text-sm">Loading voicemails...</p>
           </div>
         </div>
-      ) : messages.length === 0 ? (
+      ) : filteredAndSorted.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
           <Voicemail size={36} className="mx-auto mb-3 text-gray-300" />
-          <p className="font-medium text-gray-600">No voicemails</p>
-          <p className="text-sm text-gray-400 mt-1">Voicemails left for your extensions will appear here</p>
+          <p className="font-medium text-gray-600">
+            {messages.length === 0 ? 'No voicemails' : 'No voicemails match this filter'}
+          </p>
+          <p className="text-sm text-gray-400 mt-1">
+            {messages.length === 0
+              ? 'Voicemails left for your extensions will appear here'
+              : 'Try a different extension or clear the filter'}
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {messages.map((msg: VoicemailMsg) => (
+          {filteredAndSorted.map((msg: VoicemailMsg) => (
             <div
               key={msg.id}
               className={`bg-white rounded-xl border shadow-sm p-4 transition ${
@@ -146,19 +224,14 @@ export default function VoicemailPage() {
               style={playing === msg.id ? { borderColor: accentColor } : {}}
             >
               <div className="flex items-center gap-4">
-                {/* Play button */}
                 <button
                   onClick={() => playMessage(msg)}
                   className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition text-white"
                   style={{ background: playing === msg.id ? '#EF4444' : accentColor }}
                 >
-                  {playing === msg.id
-                    ? <Pause size={18} />
-                    : <Play size={18} className="ml-0.5" />
-                  }
+                  {playing === msg.id ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
                 </button>
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-gray-900 text-sm">
@@ -170,24 +243,18 @@ export default function VoicemailPage() {
                     >
                       Ext. {msg.extension}
                     </span>
-                    {msg.size && (
-                      <span className="text-xs text-gray-400">{formatSize(msg.size)}</span>
+                    {msg.size > 0 && (
+                      <span className="text-xs text-gray-400">{formatDuration(estimateDuration(msg.size))}</span>
                     )}
                   </div>
                   <p className="text-xs text-gray-400 mt-0.5">{formatDate(msg.created_at)}</p>
-
-                  {/* Audio progress indicator */}
                   {playing === msg.id && (
                     <div className="mt-2 h-1 rounded-full overflow-hidden bg-gray-100">
-                      <div
-                        className="h-full rounded-full animate-pulse"
-                        style={{ background: accentColor, width: '60%' }}
-                      />
+                      <div className="h-full rounded-full animate-pulse" style={{ background: accentColor, width: '60%' }} />
                     </div>
                   )}
                 </div>
 
-                {/* Actions */}
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <button
                     onClick={() => downloadMessage(msg)}
