@@ -15,12 +15,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch everything the admin portal needs in one request
-    const [accountsRes, extensionsRes, callsRes, authUsersRes, accountUsersRes] = await Promise.all([
+    const [accountsRes, extensionsRes, callsRes, authUsersRes, accountUsersRes, leadsRes] = await Promise.all([
       supabaseAdmin.from('accounts').select('*').order('created_at', { ascending: false }),
       supabaseAdmin.from('extensions').select('*, accounts(name)').order('extension_number'),
       supabaseAdmin.from('call_detail_records').select('*').order('created_at', { ascending: false }).limit(200),
       supabaseAdmin.auth.admin.listUsers(),
       supabaseAdmin.from('account_users').select('*, accounts(name), extensions(extension_number, display_name)').order('created_at', { ascending: false }),
+      supabaseAdmin.from('intake_leads').select('*').order('created_at', { ascending: false }),
     ])
 
     const accounts = accountsRes.data || []
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    return NextResponse.json({ accounts, extensions, calls, authUsers })
+    return NextResponse.json({ accounts, extensions, calls, authUsers, leads: leadsRes.data || [] })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

@@ -20,7 +20,7 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-3">
           <Link href="/auth/login" className="text-sm text-gray-500 hover:text-[#0C2C68] transition font-medium">Sign In</Link>
-          <Link href="/auth/login" className="bg-[#0C2C68] hover:bg-[#1A56C4] text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition">Start Free Trial</Link>
+          <Link href="/get-started" className="bg-[#0C2C68] hover:bg-[#1A56C4] text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition">Request a Demo</Link>
         </div>
       </nav>
 
@@ -43,8 +43,8 @@ export default function LandingPage() {
             One platform for calls, SMS, team softphones, AI lead qualification, and business intelligence — in any language, from anywhere in the world.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Link href="/auth/login" className="w-full sm:w-auto bg-[#0C2C68] hover:bg-[#1A56C4] text-white font-bold text-lg px-8 py-4 rounded-xl transition flex items-center justify-center gap-2">
-              Start Free Trial
+            <Link href="/get-started" className="w-full sm:w-auto bg-[#0C2C68] hover:bg-[#1A56C4] text-white font-bold text-lg px-8 py-4 rounded-xl transition flex items-center justify-center gap-2">
+              Request a Demo
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </Link>
             <a href="#how-it-works" className="w-full sm:w-auto border border-gray-200 hover:border-[#0C2C68] text-gray-600 hover:text-[#0C2C68] font-semibold text-lg px-8 py-4 rounded-xl transition text-center">See How It Works</a>
@@ -180,7 +180,7 @@ export default function LandingPage() {
             ))}
           </div>
           <p className="text-center text-gray-400 text-sm mt-10">
-            Recognize any of these? <Link href="/auth/login" className="text-[#0C2C68] font-semibold hover:underline">Start your free trial today.</Link>
+            Recognize any of these? <Link href="/get-started" className="text-[#0C2C68] font-semibold hover:underline">Request a demo today.</Link>
           </p>
         </div>
       </section>
@@ -197,12 +197,12 @@ export default function LandingPage() {
               {
                 name:"Solo", price:"$29", desc:"For individuals and one-person businesses", highlight:false,
                 features:["1 virtual phone number","Unlimited inbound calls","AI Receptionist 24/7","Voicemail transcription","Call summaries & logs","Mobile app included"],
-                cta:"Start Free Trial", href:"/auth/login",
+                cta:"Request a Demo", href:"/get-started",
               },
               {
                 name:"Business", price:"$79", desc:"For teams of 2 to 20 people", highlight:true,
                 features:["Everything in Solo","Up to 5 phone numbers","Team softphone extensions","Simultaneous ring groups","AI lead qualification","CRM webhooks","Morning AI briefing","Priority support"],
-                cta:"Start Free Trial", href:"/auth/login",
+                cta:"Request a Demo", href:"/get-started",
               },
               {
                 name:"Enterprise", price:"Custom", desc:"For organizations that need more", highlight:false,
@@ -239,11 +239,11 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-black mb-4 text-white">The communications platform<br /><span className="text-blue-300">your business deserves.</span></h2>
           <p className="text-blue-200 text-lg mb-8 max-w-xl mx-auto">Join businesses across the US, Nigeria, UK, and beyond replacing legacy phone systems with AI that works 24/7, speaks multiple languages, and gets smarter every day.</p>
-          <Link href="/auth/login" className="inline-flex items-center gap-2 bg-white text-[#0C2C68] hover:bg-blue-50 font-bold text-lg px-10 py-4 rounded-xl transition">
-            Get Started Free
+          <Link href="/get-started" className="inline-flex items-center gap-2 bg-white text-[#0C2C68] hover:bg-blue-50 font-bold text-lg px-10 py-4 rounded-xl transition">
+            Request a Demo
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </Link>
-          <p className="text-blue-400 text-sm mt-4">No credit card · Cancel anytime · Live in 5 minutes</p>
+          <p className="text-blue-400 text-sm mt-4">No commitment required · Personalized walkthrough · Live in days, not months</p>
         </div>
       </section>
 

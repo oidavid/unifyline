@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'UL-Admin-2026!'
 
 type AuthState = { type: 'none' } | { type: 'super_admin' }
-type Tab = 'accounts' | 'extensions' | 'users' | 'calls' | 'system'
+type Tab = 'accounts' | 'extensions' | 'users' | 'calls' | 'leads' | 'system'
 type ModalType = 'new_account' | 'new_extension' | 'invite_user' | 'assign_user' | null
 
 type Account = {
@@ -27,9 +27,14 @@ type CallRecord = {
   id: string; from_number: string; to_number: string; duration_sec: number
   direction: string; ai_summary: string; created_at: string; account_id: string
 }
+type Lead = {
+  id: string; business_name: string; contact_name: string; email: string
+  phone: string; industry: string; message: string; status: string; created_at: string
+}
 type Stats = {
   totalAccounts: number; activeAccounts: number; trialAccounts: number
   totalExtensions: number; totalCalls: number; totalUsers: number
+  totalLeads: number; newLeads: number
 }
 
 export default function AdminPage() {
@@ -45,6 +50,8 @@ export default function AdminPage() {
   const [extensions, setExtensions] = useState<Extension[]>([])
   const [authUsers, setAuthUsers]   = useState<AuthUser[]>([])
   const [calls, setCalls]           = useState<CallRecord[]>([])
+  const [leads, setLeads]           = useState<Lead[]>([])
+  const [expandedLead, setExpandedLead] = useState<string | null>(null)
 
   const [search, setSearch]             = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -105,6 +112,7 @@ export default function AdminPage() {
       const exts: Extension[] = data.extensions || []
       const users: AuthUser[] = data.authUsers || []
       const cls: CallRecord[] = data.calls || []
+      const lds: Lead[] = data.leads || []
 
       setAccounts(accts.map(a => ({
         ...a,
@@ -114,6 +122,7 @@ export default function AdminPage() {
       setExtensions(exts)
       setAuthUsers(users)
       setCalls(cls)
+      setLeads(lds)
       setStats({
         totalAccounts:  accts.length,
         activeAccounts: accts.filter(a => a.status === 'active').length,
@@ -121,6 +130,8 @@ export default function AdminPage() {
         totalExtensions: exts.length,
         totalCalls:     cls.length,
         totalUsers:     users.length,
+        totalLeads:     lds.length,
+        newLeads:       lds.filter(l => l.status === 'new').length,
       })
     } catch (e) { console.error('loadAll error:', e) }
     setLoading(false)
@@ -266,6 +277,31 @@ export default function AdminPage() {
     return ms && (filterAccount === 'all' || c.account_id === filterAccount)
   })
 
+  const filteredLeads = leads.filter(l => {
+    if (!search) return true
+    const s = search.toLowerCase()
+    return l.business_name?.toLowerCase().includes(s) || l.contact_name?.toLowerCase().includes(s) || l.email?.toLowerCase().includes(s)
+  })
+
+  async function handleUpdateLeadStatus(lead: Lead, status: string) {
+    await fetch('/api/admin/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ admin_password: ADMIN_PASSWORD, action: 'update_status', id: lead.id, status }),
+    })
+    loadAll()
+  }
+
+  async function handleDeleteLead(lead: Lead) {
+    if (!confirm(`Delete lead from ${lead.business_name}?`)) return
+    await fetch('/api/admin/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ admin_password: ADMIN_PASSWORD, action: 'delete', id: lead.id }),
+    })
+    loadAll()
+  }
+
   // ── HELPERS ────────────────────────────────────────────────────────────────
   const sc = (s: string) => {
     if (s === 'active') return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30'
@@ -308,6 +344,7 @@ export default function AdminPage() {
     { key: 'extensions', label: 'Extensions', count: stats?.totalExtensions },
     { key: 'users',      label: 'Users',      count: stats?.totalUsers },
     { key: 'calls',      label: 'Call Logs',  count: stats?.totalCalls },
+    { key: 'leads',      label: 'Leads',      count: stats?.newLeads },
     { key: 'system',     label: 'System' },
   ]
 
@@ -342,7 +379,7 @@ export default function AdminPage() {
 
         {/* STATS */}
         {stats && (
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+          <div className="grid grid-cols-3 md:grid-cols-7 gap-3 mb-6">
             {[
               { label: 'Total Accounts', value: stats.totalAccounts,  color: '' },
               { label: 'Active',         value: stats.activeAccounts, color: 'text-emerald-400' },
@@ -350,6 +387,7 @@ export default function AdminPage() {
               { label: 'Extensions',     value: stats.totalExtensions,color: '' },
               { label: 'Users',          value: stats.totalUsers,     color: 'text-blue-400' },
               { label: 'Call Records',   value: stats.totalCalls,     color: '' },
+              { label: 'New Leads',      value: stats.newLeads,       color: 'text-amber-400' },
             ].map(s => (
               <div key={s.label} className={`${th.surface} border rounded-xl p-4`}>
                 <div className={`text-2xl font-bold ${s.color || th.bodyText}`}>{s.value}</div>
@@ -368,7 +406,7 @@ export default function AdminPage() {
         )}
 
         {/* TOOLBAR */}
-        {!loading && (tab === 'accounts' || tab === 'extensions' || tab === 'calls' || tab === 'users') && (
+        {!loading && (tab === 'accounts' || tab === 'extensions' || tab === 'calls' || tab === 'users' || tab === 'leads') && (
           <div className="flex gap-3 mb-5 flex-wrap">
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search ${tab}…`}
               className={`flex-1 min-w-[200px] px-4 py-2 rounded-xl border text-sm outline-none transition-colors ${th.input}`} />
@@ -522,6 +560,67 @@ export default function AdminPage() {
                   )
                 })}
                 {filteredCalls.length === 0 && <tr><td colSpan={7} className={`px-4 py-14 text-center text-sm ${th.emptyText}`}>No call records found</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ══ LEADS ══ */}
+        {tab === 'leads' && !loading && (
+          <div className={`${th.surface} border rounded-2xl overflow-hidden`}>
+            <table className="w-full text-sm">
+              <thead><tr className={`${th.surface2} border-b ${th.rowDivider}`}>
+                {['Business', 'Contact', 'Email', 'Phone', 'Industry', 'Status', 'Submitted', ''].map(h => (
+                  <th key={h} className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${th.muted}`}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {filteredLeads.map(lead => {
+                  const isExp = expandedLead === lead.id
+                  const statusColors: Record<string, string> = {
+                    new: 'text-amber-400 bg-amber-400/10 border-amber-400/30',
+                    contacted: 'text-blue-400 bg-blue-400/10 border-blue-400/30',
+                    converted: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30',
+                    closed: 'text-gray-400 bg-gray-400/10 border-gray-400/30',
+                  }
+                  return (
+                    <>
+                      <tr key={lead.id} className={`border-b ${th.row} transition-colors cursor-pointer`} onClick={() => setExpandedLead(isExp ? null : lead.id)}>
+                        <td className={`px-4 py-3 font-medium ${th.bodyText}`}>{lead.business_name}</td>
+                        <td className={`px-4 py-3 text-xs ${th.subText}`}>{lead.contact_name}</td>
+                        <td className={`px-4 py-3 font-mono text-xs ${th.monoText}`}>{lead.email}</td>
+                        <td className={`px-4 py-3 font-mono text-xs ${th.monoText}`}>{lead.phone || '—'}</td>
+                        <td className={`px-4 py-3 text-xs ${th.subText}`}>{lead.industry || '—'}</td>
+                        <td className="px-4 py-3">
+                          <select
+                            value={lead.status}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => handleUpdateLeadStatus(lead, e.target.value)}
+                            className={`text-xs px-2 py-1 rounded-full border outline-none cursor-pointer ${statusColors[lead.status] || statusColors.new}`}
+                          >
+                            <option value="new">New</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="converted">Converted</option>
+                            <option value="closed">Closed</option>
+                          </select>
+                        </td>
+                        <td className={`px-4 py-3 text-xs ${th.subText} whitespace-nowrap`}>{new Date(lead.created_at).toLocaleDateString()}</td>
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => handleDeleteLead(lead)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
+                        </td>
+                      </tr>
+                      {isExp && (
+                        <tr key={lead.id+'-exp'} className={`border-b ${d ? 'bg-[#22263a]' : 'bg-blue-50'}`}>
+                          <td colSpan={8} className="px-6 py-4">
+                            <div className={`text-xs font-semibold uppercase tracking-wider mb-2 ${th.muted}`}>Message</div>
+                            <div className={`text-sm leading-relaxed ${th.bodyText}`}>{lead.message || 'No message provided.'}</div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  )
+                })}
+                {filteredLeads.length === 0 && <tr><td colSpan={8} className={`px-4 py-14 text-center text-sm ${th.emptyText}`}>No leads yet — submissions from /get-started will appear here</td></tr>}
               </tbody>
             </table>
           </div>
