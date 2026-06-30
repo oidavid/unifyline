@@ -2,7 +2,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Phone, LayoutDashboard, Users, LogOut, Mic, Video, GitBranch, Voicemail, PhoneCall, Hash, Menu, X, Settings } from 'lucide-react'
+import { Phone, LayoutDashboard, Users, LogOut, Mic, Video, GitBranch, Voicemail, PhoneCall, Hash, Menu, X, Settings, BarChart3 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 
@@ -21,6 +21,7 @@ const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/phone', icon: PhoneCall, label: 'Phone' },
   { href: '/dashboard/calls', icon: Phone, label: 'Call Logs' },
+  { href: '/dashboard/reports', icon: BarChart3, label: 'Reports' },
   { href: '/dashboard/ai-receptionist', icon: Mic, label: 'AI Receptionist' },
   { href: '/dashboard/extensions', icon: Hash, label: 'Extensions' },
   { href: '/dashboard/follow-me', icon: GitBranch, label: 'Follow-Me' },
