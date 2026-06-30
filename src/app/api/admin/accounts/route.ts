@@ -7,6 +7,27 @@ const supabaseAdmin = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 )
 
+const VM_API = process.env.VOICEMAIL_API_URL || 'http://198.58.114.103:8088'
+const VM_SECRET = process.env.VOICEMAIL_API_SECRET || ''
+
+async function provisionDomain(sip_domain: string) {
+  try {
+    const res = await fetch(`${VM_API}/api/provision-domain`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Internal-Auth': VM_SECRET },
+      body: JSON.stringify({ sip_domain }),
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) {
+      const err = await res.text()
+      return { ok: false, error: err }
+    }
+    return { ok: true }
+  } catch (e: any) {
+    return { ok: false, error: e.message }
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -20,7 +41,18 @@ export async function POST(req: NextRequest) {
         brand_primary_color: body.brand_primary_color, status: body.status,
       }])
       if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-      return NextResponse.json({ success: true })
+
+      // Auto-provision the SIP domain on FreeSWITCH so extensions can be added immediately after
+      const provision = await provisionDomain(body.sip_domain)
+
+      if (!provision.ok) {
+        return NextResponse.json({
+          success: true,
+          warning: `Account created but SIP domain provisioning failed: ${provision.error}. Extensions cannot register until this is fixed manually on the server.`
+        })
+      }
+
+      return NextResponse.json({ success: true, provisioned: true })
     }
 
     if (body.action === 'toggle') {
