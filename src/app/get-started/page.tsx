@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import React, { useState } from 'react'
 import { CheckCircle, Phone, Mail, Building2 } from 'lucide-react'
 
@@ -119,12 +119,25 @@ export default function GetStartedPage() {
               className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500"
             >
               <option value="">Select an industry</option>
-              <option value="transportation">Transportation & Charter Services</option>
+              <option value="technology">Technology & Software</option>
               <option value="professional_services">Professional Services</option>
               <option value="healthcare">Healthcare</option>
-              <option value="real_estate">Real Estate</option>
-              <option value="hospitality">Hospitality & Events</option>
-              <option value="retail">Retail</option>
+              <option value="financial_services">Financial Services & Banking</option>
+              <option value="manufacturing">Manufacturing & Industrial</option>
+              <option value="transportation">Transportation & Logistics</option>
+              <option value="retail">Retail & E-commerce</option>
+              <option value="real_estate">Real Estate & Construction</option>
+              <option value="hospitality">Hospitality, Travel & Events</option>
+              <option value="education">Education</option>
+              <option value="government">Government & Public Sector</option>
+              <option value="nonprofit">Nonprofit & NGOs</option>
+              <option value="media">Media, Marketing & Advertising</option>
+              <option value="telecommunications">Telecommunications</option>
+              <option value="energy">Energy & Utilities</option>
+              <option value="agriculture">Agriculture & Food</option>
+              <option value="automotive">Automotive</option>
+              <option value="legal">Legal Services</option>
+              <option value="insurance">Insurance</option>
               <option value="other">Other</option>
             </select>
           </div>
