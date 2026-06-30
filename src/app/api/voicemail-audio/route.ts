@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
-const FS_API = 'http://198.58.114.103:8088'
+const VM_API = process.env.VOICEMAIL_API_URL || 'http://198.58.114.103:8088'
+const VM_SECRET = process.env.VOICEMAIL_API_SECRET || ''
 
-// Proxies voicemail audio from FreeSWITCH server
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient()
@@ -11,28 +11,17 @@ export async function GET(req: NextRequest) {
     if (!user) return new NextResponse('Unauthorized', { status: 401 })
 
     const filePath = req.nextUrl.searchParams.get('path')
-    if (!filePath || !filePath.includes('voicemail')) {
-      return new NextResponse('Invalid path', { status: 400 })
-    }
+    if (!filePath) return new NextResponse('Missing path', { status: 400 })
 
-    // Fetch audio file from FreeSWITCH server
     const res = await fetch(
-      `${FS_API}/api/file?path=${encodeURIComponent(filePath)}`,
-      { signal: AbortSignal.timeout(10000) }
+      `${VM_API}/api/voicemail-audio?path=${encodeURIComponent(filePath)}`,
+      { headers: { 'X-Internal-Auth': VM_SECRET }, signal: AbortSignal.timeout(10000) }
     )
-
-    if (!res.ok) {
-      return new NextResponse('Audio not found', { status: 404 })
-    }
+    if (!res.ok) return new NextResponse('Audio not found', { status: 404 })
 
     const buffer = await res.arrayBuffer()
-
     return new NextResponse(buffer, {
-      headers: {
-        'Content-Type': 'audio/wav',
-        'Accept-Ranges': 'bytes',
-        'Cache-Control': 'no-cache',
-      },
+      headers: { 'Content-Type': 'audio/wav', 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-cache' },
     })
   } catch (e: any) {
     return new NextResponse('Error', { status: 500 })
