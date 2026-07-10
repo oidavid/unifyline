@@ -8,12 +8,20 @@ type CallState = 'idle' | 'connecting' | 'ringing' | 'active' | 'incoming'
 const SIP_TRANSPORT_HOST = '198.58.114.103'
 const WS_URL = `wss://${SIP_TRANSPORT_HOST}:7443`
 
-const ICE_SERVERS = [
+const STUN_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+]
+
+// Static fallback — only used if the Twilio TURN credential fetch fails
+const ICE_SERVERS = [
+  ...STUN_SERVERS,
   { urls: 'turn:198.58.114.103:3478', username: 'unifyline', credential: 'UnifyTurn2026!' },
   { urls: 'turns:198.58.114.103:5349', username: 'unifyline', credential: 'UnifyTurn2026!' },
 ]
+
+// Refresh Twilio TURN credentials every 4 hours (tokens live 24h)
+const TURN_REFRESH_MS = 4 * 60 * 60 * 1000
 
 type TenantTheme = {
   dark: boolean
@@ -134,14 +142,16 @@ function buildTheme(primaryColor: string): TenantTheme {
   }
 }
 
-function getDynamicICE() {
+// Returns STUN + fresh Twilio TURN servers if available, otherwise static fallback
+function getDynamicICE(): RTCIceServer[] {
   const dynamic = (window as any).__TURN_SERVERS
-  if (dynamic && Array.isArray(dynamic)) {
-    return dynamic.map((s: any) => ({
+  if (dynamic && Array.isArray(dynamic) && dynamic.length > 0) {
+    const turn = dynamic.map((s: any) => ({
       urls: s.urls || s.url,
       username: s.username,
       credential: s.credential,
     }))
+    return [...STUN_SERVERS, ...turn]
   }
   return ICE_SERVERS
 }
@@ -149,12 +159,27 @@ function getDynamicICE() {
 function patchedCall<T>(fn: () => T): T {
   const NativePC = window.RTCPeerConnection
   function PatchedPC(this: any, config: RTCConfiguration) {
-    return new NativePC({ ...config, iceServers: ICE_SERVERS, iceTransportPolicy: 'all' })
+    return new NativePC({ ...config, iceServers: getDynamicICE(), iceTransportPolicy: 'all' })
   }
   PatchedPC.prototype = NativePC.prototype
   ;(PatchedPC as any).generateCertificate = NativePC.generateCertificate?.bind(NativePC)
   window.RTCPeerConnection = PatchedPC as any
   try { return fn() } finally { window.RTCPeerConnection = NativePC }
+}
+
+async function refreshTurnCredentials() {
+  try {
+    const turnRes = await fetch('/api/turn-credentials', { cache: 'no-store' })
+    if (turnRes.ok) {
+      const turnData = await turnRes.json()
+      if (turnData?.iceServers && Array.isArray(turnData.iceServers) && turnData.iceServers.length > 0) {
+        ;(window as any).__TURN_SERVERS = turnData.iceServers
+        console.log('[TURN] Refreshed', turnData.iceServers.length, 'ICE servers from Twilio')
+      }
+    } else {
+      console.warn('[TURN refresh] API returned', turnRes.status)
+    }
+  } catch (e) { console.warn('[TURN refresh]', e) }
 }
 
 function createRingtone(ctx: AudioContext): { start: () => void; stop: () => void } {
@@ -214,6 +239,13 @@ export default function PhoneClient({ initialColor }: { initialColor: string }) 
 
   useEffect(() => { loadTenantData() }, [])
 
+  // Auto-refresh Twilio TURN credentials on mount + every 4 hours
+  useEffect(() => {
+    refreshTurnCredentials()
+    const interval = setInterval(refreshTurnCredentials, TURN_REFRESH_MS)
+    return () => clearInterval(interval)
+  }, [])
+
   useEffect(() => {
     if (callState === 'active') {
       timerRef.current = setInterval(() => setCallDuration((d: number) => d + 1), 1000)
@@ -243,17 +275,6 @@ export default function PhoneClient({ initialColor }: { initialColor: string }) 
   }
 
   async function loadTenantData() {
-    // Fetch fresh TURN credentials from Twilio API
-    try {
-      const turnRes = await fetch('/api/turn-credentials')
-      if (turnRes.ok) {
-        const turnData = await turnRes.json()
-        if (turnData?.iceServers) {
-          // Update ICE servers dynamically
-          ;(window as any).__TURN_SERVERS = turnData.iceServers
-        }
-      }
-    } catch (e) { console.warn('[TURN refresh]', e) }
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return

@@ -1,44 +1,48 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { NextResponse } from 'next/server'
 
-// Fetches fresh Twilio TURN credentials (valid 24h)
-// Called by the phone page on mount so credentials never expire
-export async function GET(req: NextRequest) {
+export const dynamic = 'force-dynamic'
+
+// Fetches a fresh Twilio Network Traversal Service (NTS) token.
+// Returns normalized { iceServers: [{ urls, username, credential }], ttl }
+export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json(null, { status: 401 })
+    const sid = process.env.TWILIO_ACCOUNT_SID
+    const token = process.env.TWILIO_AUTH_TOKEN
 
-    const accountSid = process.env.TWILIO_ACCOUNT_SID
-    const authToken = process.env.TWILIO_AUTH_TOKEN
-
-    if (!accountSid || !authToken) {
-      return NextResponse.json(null, { status: 500 })
+    if (!sid || !token) {
+      return NextResponse.json({ error: 'Twilio credentials not configured' }, { status: 500 })
     }
 
-    const credentials = btoa(`${accountSid}:${authToken}`)
     const res = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Tokens.json`,
+      `https://api.twilio.com/2010-04-01/Accounts/${sid}/Tokens.json`,
       {
         method: 'POST',
-        headers: { Authorization: `Basic ${credentials}` },
+        headers: {
+          Authorization: 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64'),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ Ttl: '86400' }),
+        cache: 'no-store',
       }
     )
 
     if (!res.ok) {
-      console.error('[turn-credentials] Twilio error:', res.status)
-      return NextResponse.json(null, { status: 500 })
+      const text = await res.text()
+      console.error('[turn-credentials] Twilio error:', res.status, text)
+      return NextResponse.json({ error: 'Failed to fetch TURN token from Twilio' }, { status: 502 })
     }
 
     const data = await res.json()
-    
-    // Return just the ice_servers array
-    return NextResponse.json({
-      iceServers: data.ice_servers,
-      ttl: data.ttl,
-    })
+
+    const iceServers = (data.ice_servers || []).map((s: any) => ({
+      urls: s.urls || s.url,
+      username: s.username,
+      credential: s.credential,
+    }))
+
+    return NextResponse.json({ iceServers, ttl: data.ttl })
   } catch (e: any) {
     console.error('[turn-credentials]', e)
-    return NextResponse.json(null, { status: 500 })
+    return NextResponse.json({ error: e?.message || 'Internal error' }, { status: 500 })
   }
 }
