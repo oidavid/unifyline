@@ -11,6 +11,43 @@ export interface ReceptionistConfig {
   knowledge_base: string
   active: boolean
   tenant_account_id?: string | null
+  mode?: string
+}
+
+/**
+ * Look up a DID-specific override config (per-number behavior, e.g. two
+ * different AI modes on two different DIDs for the same tenant). Returns
+ * null if this exact DID has no override row.
+ */
+async function getConfigByDidOverride(didNumber: string): Promise<ReceptionistConfig | null> {
+  const normalizedDid = didNumber.replace(/\D/g, '').replace(/^1/, '')
+  const { data } = await supabase
+    .from('did_receptionist_config')
+    .select('*')
+    .eq('did_number', normalizedDid)
+    .eq('active', true)
+    .single()
+
+  if (!data) return null
+
+  let knowledgeBase = data.knowledge_base || ''
+  if (!knowledgeBase && data.account_id) {
+    const { data: accountConfig } = await supabase
+      .from('ai_receptionist_config')
+      .select('knowledge_base')
+      .eq('tenant_account_id', data.account_id)
+      .single()
+    knowledgeBase = accountConfig?.knowledge_base || ''
+  }
+
+  return {
+    system_prompt: data.system_prompt,
+    greeting_text: data.greeting_text,
+    knowledge_base: knowledgeBase,
+    active: data.active,
+    tenant_account_id: data.account_id,
+    mode: data.mode,
+  }
 }
 
 /**
@@ -40,14 +77,18 @@ async function getConfigByDid(didNumber: string): Promise<ReceptionistConfig | n
 }
 
 /**
- * Get the AI Receptionist config for an inbound call. If a DID is provided
- * and it's registered to a tenant account with its own config, that
- * tenant-specific config is used. Otherwise falls back to the original
- * single "active" config behavior (legacy/default), and finally to a
- * hardcoded baseline if nothing is configured at all.
+ * Get the AI Receptionist config for an inbound call. Resolution order:
+ *   1. DID-specific override (did_receptionist_config) - lets one tenant
+ *      run different AI behavior on different numbers (e.g. A/B pilot modes).
+ *   2. Account-level config resolved via the dialed DID.
+ *   3. Legacy single "active" config (old default behavior).
+ *   4. Hardcoded baseline if nothing is configured at all.
  */
 export async function getActiveReceptionistConfig(didNumber?: string): Promise<ReceptionistConfig | null> {
   if (didNumber) {
+    const didOverride = await getConfigByDidOverride(didNumber)
+    if (didOverride) return didOverride
+
     const tenantConfig = await getConfigByDid(didNumber)
     if (tenantConfig) return tenantConfig
   }
@@ -64,7 +105,7 @@ CRITICAL RULES:
 - If someone asks for a specific person: say they are unavailable and offer to take a message
 - If someone asks for a department: say you will pass a message to that team
 - IMPORTANT: You already have the caller phone number from their caller ID. NEVER ask for their phone number.
-- When confirming a callback number, say: 'Should we call you back on the number you are calling from?' 
+- When confirming a callback number, say: 'Should we call you back on the number you are calling from?'
 - Only ask for the caller's NAME, not their phone number
 - Before ending: confirm their name and let them know someone will follow up`,
       greeting_text: 'Thank you for calling. This is the AI receptionist. How may I help you today?',
@@ -86,8 +127,6 @@ export async function getDefaultAccountId(didNumber?: string): Promise<string | 
     if (phoneRow?.account_id) return phoneRow.account_id
   }
 
-  // Fallback: legacy behavior - first active config's account_id (old column,
-  // kept for backward compatibility with existing call records).
   const { data } = await supabase.from('ai_receptionist_config').select('account_id').eq('active', true).limit(1).single()
   return data?.account_id || null
 }
@@ -137,12 +176,11 @@ export async function saveCallTranscript(
   conversation: ConversationMessage[],
   summary: string
 ) {
-  // If no accountId provided, get the default active account
   let finalAccountId = accountId
   if (!finalAccountId) {
     finalAccountId = await getDefaultAccountId() || ''
   }
-  
+
   await supabase.from('call_detail_records').upsert({
     call_uuid: callUuid,
     account_id: finalAccountId,
@@ -167,4 +205,3 @@ export async function generateCallSummary(conversation: ConversationMessage[]): 
   const textBlock = response.content.find(block => block.type === 'text')
   return textBlock ? textBlock.text : 'Call completed.'
 }
-
