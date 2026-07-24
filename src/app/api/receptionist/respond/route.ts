@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import {
   getActiveReceptionistConfig,
   generateAIResponse,
@@ -101,6 +101,37 @@ export async function POST(req: NextRequest) {
         ai_response: text,
         audio_b64: Buffer.from(audio).toString('base64')
       })
+    }
+
+    // ON-CALL LOOKUP - find the next on-call number for this account,
+    // excluding whichever number the caller is calling FROM (so a test
+    // call from one on-call phone doesn't just ring itself).
+    if (action === 'on_call_lookup') {
+      const normalizedCaller = callerNumber.replace(/\D/g, '').replace(/^1/, '')
+      const accountId = await getDefaultAccountId(destinationNumber || undefined)
+
+      if (!accountId) {
+        return NextResponse.json({ success: true, on_call_number: '' })
+      }
+
+      const { data: rows } = await supabase
+        .from('on_call_schedule')
+        .select('phone_number, priority')
+        .eq('account_id', accountId)
+        .eq('active', true)
+        .order('priority', { ascending: true })
+
+      let chosen = ''
+      for (const row of rows || []) {
+        const normalizedRow = (row.phone_number || '').replace(/\D/g, '').replace(/^1/, '')
+        if (normalizedRow && normalizedRow !== normalizedCaller) {
+          chosen = row.phone_number
+          break
+        }
+      }
+
+      console.log(`[on_call_lookup] account=${accountId} caller=${callerNumber} -> chosen=${chosen}`)
+      return NextResponse.json({ success: true, on_call_number: chosen })
     }
 
     // TRANSCRIBE ONLY
