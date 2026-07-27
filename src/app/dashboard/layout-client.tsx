@@ -2,7 +2,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Phone, LayoutDashboard, Users, LogOut, Mic, Video, GitBranch, Voicemail, PhoneCall, Hash, Menu, X, Settings, BarChart3 } from 'lucide-react'
+import { Phone, LayoutDashboard, Users, LogOut, Mic, Video, GitBranch, Voicemail, PhoneCall, Hash, Menu, X, Settings, BarChart3, PhoneForwarded } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 
@@ -23,6 +23,7 @@ const navItems = [
   { href: '/dashboard/calls', icon: Phone, label: 'Call Logs' },
   { href: '/dashboard/reports', icon: BarChart3, label: 'Reports' },
   { href: '/dashboard/ai-receptionist', icon: Mic, label: 'AI Receptionist' },
+  { href: '/dashboard/on-call', icon: PhoneForwarded, label: 'On-Call' },
   { href: '/dashboard/extensions', icon: Hash, label: 'Extensions' },
   { href: '/dashboard/follow-me', icon: GitBranch, label: 'Follow-Me' },
   { href: '/dashboard/voicemail', icon: Voicemail, label: 'Voicemail' },
@@ -144,7 +145,7 @@ export default function DashboardLayoutClient({
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* DESKTOP SIDEBAR — uses sidebar-bg class set by server CSS, no flash */}
+      {/* DESKTOP SIDEBAR â€” uses sidebar-bg class set by server CSS, no flash */}
       <aside
         className="hidden md:flex w-56 text-white flex-col flex-shrink-0 sidebar-bg"
         style={{ backgroundColor: bg }}
