@@ -5,6 +5,7 @@ import {
   textToSpeech,
   transcribeAudio,
   generateCallSummary,
+  generateTransferBrief,
   getDefaultAccountId,
   ConversationMessage,
 } from '@/lib/receptionist'
@@ -87,7 +88,6 @@ export async function POST(req: NextRequest) {
     const config = await getActiveReceptionistConfig(destinationNumber || undefined)
     if (!config) throw new Error('No receptionist config found')
 
-    // GREET
     if (action === 'greet') {
       const audio = await textToSpeech(config.greeting_text)
       const systemNote = `CALLER INFO: The caller phone number is ${callerNumber}. Do not ask for it. If they want a callback, confirm this number.`
@@ -103,7 +103,6 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // SAY - pure TTS
     if (action === 'say') {
       const text = sayText || 'Hello'
       const audio = await textToSpeech(text)
@@ -114,11 +113,14 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // ON-CALL LOOKUP - department-aware. Looks for an active number staffed
-    // for the requested department first; falls back to a general (NULL
-    // department) number if none is staffed for that department yet.
-    // Always excludes the caller's own number so a test call from one
-    // on-call phone doesn't just ring itself.
+    if (action === 'transfer_brief') {
+      const conversation = await getConversation(callUuid)
+      const brief = await generateTransferBrief(conversation, department)
+      const audio = await textToSpeech(brief)
+      console.log(`[transfer_brief] ${callUuid} dept=${department}: "${brief}"`)
+      return NextResponse.json({ success: true, brief_text: brief, audio_b64: Buffer.from(audio).toString('base64') })
+    }
+
     if (action === 'on_call_lookup') {
       const normalizedCaller = callerNumber.replace(/\D/g, '').replace(/^1/, '')
       const accountId = await getDefaultAccountId(destinationNumber || undefined)
@@ -158,7 +160,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, on_call_number: chosen })
     }
 
-    // TRANSCRIBE ONLY
     if (action === 'transcribe_only') {
       if (!audioBuffer || audioBuffer.byteLength < 1000) {
         return NextResponse.json({ success: true, transcript: '' })
@@ -167,7 +168,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, transcript })
     }
 
-    // SILENCE
     if (action === 'silence') {
       const msg = "I'm sorry, I didn't catch that. Could you please say that again?"
       const audio = await textToSpeech(msg)
@@ -178,7 +178,6 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // CALLBACK PROMPT
     if (action === 'callback_prompt') {
       const num = callbackNumber || callerNumber
       const fmt = num.replace(/^\+?1?(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3')
@@ -187,7 +186,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, ai_response: msg, audio_b64: Buffer.from(audio).toString('base64') })
     }
 
-    // CALLBACK CONFIRMED
     if (action === 'callback_confirmed') {
       const num = callbackNumber || callerNumber
       const fmt = num.replace(/^\+?1?(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3')
@@ -196,14 +194,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, ai_response: msg, audio_b64: Buffer.from(audio).toString('base64') })
     }
 
-    // REQUEST ALTERNATE NUMBER
     if (action === 'request_alternate') {
       const msg = `Please enter your 10-digit callback number followed by the pound key.`
       const audio = await textToSpeech(msg)
       return NextResponse.json({ success: true, ai_response: msg, audio_b64: Buffer.from(audio).toString('base64') })
     }
 
-    // READBACK NUMBER
     if (action === 'readback_number') {
       const num = callbackNumber || callerNumber
       const digits = num.replace(/\D/g, '').split('').join(', ')
@@ -212,7 +208,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, ai_response: msg, audio_b64: Buffer.from(audio).toString('base64') })
     }
 
-    // END - save CDR
     if (action === 'end') {
       const accountId = await getDefaultAccountId(destinationNumber || undefined) || ''
       const conversation = await getConversation(callUuid)
@@ -243,7 +238,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, summary, account_id: accountId })
     }
 
-    // MAIN CONVERSATION TURN
     if (!audioBuffer || audioBuffer.byteLength < 1000) {
       const msg = "I'm sorry, I didn't catch that. Could you please repeat?"
       const audio = await textToSpeech(msg)
