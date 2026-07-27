@@ -14,11 +14,6 @@ export interface ReceptionistConfig {
   mode?: string
 }
 
-/**
- * Look up a DID-specific override config (per-number behavior, e.g. two
- * different AI modes on two different DIDs for the same tenant). Returns
- * null if this exact DID has no override row.
- */
 async function getConfigByDidOverride(didNumber: string): Promise<ReceptionistConfig | null> {
   const normalizedDid = didNumber.replace(/\D/g, '').replace(/^1/, '')
   const { data } = await supabase
@@ -50,11 +45,6 @@ async function getConfigByDidOverride(didNumber: string): Promise<ReceptionistCo
   }
 }
 
-/**
- * Look up the AI Receptionist config for a specific account by the DID that
- * was dialed. Returns null if the DID isn't registered to any account, so
- * callers can fall back to the legacy default behavior.
- */
 async function getConfigByDid(didNumber: string): Promise<ReceptionistConfig | null> {
   const normalizedDid = didNumber.replace(/\D/g, '').replace(/^1/, '')
   const { data: phoneRow } = await supabase
@@ -76,14 +66,6 @@ async function getConfigByDid(didNumber: string): Promise<ReceptionistConfig | n
   return configRow || null
 }
 
-/**
- * Get the AI Receptionist config for an inbound call. Resolution order:
- *   1. DID-specific override (did_receptionist_config) - lets one tenant
- *      run different AI behavior on different numbers (e.g. A/B pilot modes).
- *   2. Account-level config resolved via the dialed DID.
- *   3. Legacy single "active" config (old default behavior).
- *   4. Hardcoded baseline if nothing is configured at all.
- */
 export async function getActiveReceptionistConfig(didNumber?: string): Promise<ReceptionistConfig | null> {
   if (didNumber) {
     const didOverride = await getConfigByDidOverride(didNumber)
@@ -204,4 +186,23 @@ export async function generateCallSummary(conversation: ConversationMessage[]): 
   })
   const textBlock = response.content.find(block => block.type === 'text')
   return textBlock ? textBlock.text : 'Call completed.'
+}
+
+// Short, spoken briefing for a live human agent about to be connected to a
+// caller via a warm transfer - played privately to the agent before the two
+// legs are bridged together. Kept intentionally brief (under ~4 seconds of
+// speech) since the caller may be waiting in near-silence while this plays.
+export async function generateTransferBrief(conversation: ConversationMessage[], department: string): Promise<string> {
+  if (conversation.length === 0) return `Incoming transfer for ${department || 'your team'}.`
+  const transcriptText = conversation.map(m => `${m.role === 'user' ? 'Caller' : 'AI'}: ${m.content}`).join('\n')
+  const response = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 60,
+    messages: [{
+      role: 'user',
+      content: `You are briefing a live human agent who is about to be connected to a phone caller. Based on this conversation, write ONE short natural spoken sentence (under 15 words) briefing the agent - caller's name if known, what they need, and urgency if relevant. No greetings, no "say hello" instructions - just the briefing itself, ready to be spoken aloud.\n\nDepartment: ${department || 'general'}\n\n${transcriptText}`
+    }],
+  })
+  const textBlock = response.content.find(block => block.type === 'text')
+  return textBlock ? textBlock.text.trim() : `Incoming transfer for ${department || 'your team'}.`
 }
