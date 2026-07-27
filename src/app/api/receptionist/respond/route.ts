@@ -18,6 +18,16 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+const TRANSFER_TAG_RE = /\[\[TRANSFER:(\w+)\]\]/i
+
+function extractTransfer(aiResponse: string): { cleanText: string; department: string } {
+  const match = aiResponse.match(TRANSFER_TAG_RE)
+  if (!match) return { cleanText: aiResponse, department: '' }
+  const department = match[1].toLowerCase()
+  const cleanText = aiResponse.replace(TRANSFER_TAG_RE, '').replace(/\s{2,}/g, ' ').trim()
+  return { cleanText, department }
+}
+
 async function getConversation(callUuid: string): Promise<ConversationMessage[]> {
   try {
     const { data } = await supabase
@@ -46,7 +56,7 @@ export async function POST(req: NextRequest) {
     const contentType = req.headers.get('content-type') || ''
     let callUuid = '', callerNumber = 'Unknown', action = 'speak'
     let audioBuffer: ArrayBuffer | null = null
-    let callbackNumber = '', sayText = '', callerName = '', callReason = '', destinationNumber = ''
+    let callbackNumber = '', sayText = '', callerName = '', callReason = '', destinationNumber = '', department = ''
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData()
@@ -68,6 +78,7 @@ export async function POST(req: NextRequest) {
       callerName = body.caller_name || ''
       callReason = body.reason || ''
       destinationNumber = body.destination_number || ''
+      department = body.department || ''
       if (body.audio_b64) audioBuffer = Buffer.from(body.audio_b64, 'base64').buffer as ArrayBuffer
     }
 
@@ -103,9 +114,11 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // ON-CALL LOOKUP - find the next on-call number for this account,
-    // excluding whichever number the caller is calling FROM (so a test
-    // call from one on-call phone doesn't just ring itself).
+    // ON-CALL LOOKUP - department-aware. Looks for an active number staffed
+    // for the requested department first; falls back to a general (NULL
+    // department) number if none is staffed for that department yet.
+    // Always excludes the caller's own number so a test call from one
+    // on-call phone doesn't just ring itself.
     if (action === 'on_call_lookup') {
       const normalizedCaller = callerNumber.replace(/\D/g, '').replace(/^1/, '')
       const accountId = await getDefaultAccountId(destinationNumber || undefined)
@@ -114,23 +127,34 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, on_call_number: '' })
       }
 
-      const { data: rows } = await supabase
-        .from('on_call_schedule')
-        .select('phone_number, priority')
-        .eq('account_id', accountId)
-        .eq('active', true)
-        .order('priority', { ascending: true })
+      async function pickFrom(deptFilter: string | null) {
+        let query = supabase
+          .from('on_call_schedule')
+          .select('phone_number, priority')
+          .eq('account_id', accountId as string)
+          .eq('active', true)
+          .order('priority', { ascending: true })
 
-      let chosen = ''
-      for (const row of rows || []) {
-        const normalizedRow = (row.phone_number || '').replace(/\D/g, '').replace(/^1/, '')
-        if (normalizedRow && normalizedRow !== normalizedCaller) {
-          chosen = row.phone_number
-          break
+        query = deptFilter === null ? query.is('department', null) : query.eq('department', deptFilter)
+
+        const { data: rows } = await query
+        for (const row of rows || []) {
+          const normalizedRow = (row.phone_number || '').replace(/\D/g, '').replace(/^1/, '')
+          if (normalizedRow && normalizedRow !== normalizedCaller) return row.phone_number
         }
+        return ''
       }
 
-      console.log(`[on_call_lookup] account=${accountId} caller=${callerNumber} -> chosen=${chosen}`)
+      let chosen = ''
+      const dept = (department || '').toLowerCase().trim()
+      if (dept && dept !== 'general') {
+        chosen = await pickFrom(dept)
+      }
+      if (!chosen) {
+        chosen = await pickFrom(null)
+      }
+
+      console.log(`[on_call_lookup] account=${accountId} dept=${dept || '(none)'} caller=${callerNumber} -> chosen=${chosen}`)
       return NextResponse.json({ success: true, on_call_number: chosen })
     }
 
@@ -238,8 +262,10 @@ export async function POST(req: NextRequest) {
     const conversation = await getConversation(callUuid)
     conversation.push({ role: 'user', content: transcript })
 
-    const aiResponse = await generateAIResponse(conversation, config)
-    console.log(`[AI] ${callUuid}: "${aiResponse}"`)
+    const rawAiResponse = await generateAIResponse(conversation, config)
+    const { cleanText: aiResponse, department: transferDepartment } = extractTransfer(rawAiResponse)
+
+    console.log(`[AI] ${callUuid}: "${aiResponse}"${transferDepartment ? ` [TRANSFER:${transferDepartment}]` : ''}`)
     conversation.push({ role: 'assistant', content: aiResponse })
 
     await saveConversation(callUuid, callerNumber, conversation)
@@ -249,6 +275,7 @@ export async function POST(req: NextRequest) {
       success: true,
       transcript,
       ai_response: aiResponse,
+      transfer_department: transferDepartment,
       audio_b64: Buffer.from(audio).toString('base64')
     })
 
