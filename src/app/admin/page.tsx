@@ -71,7 +71,7 @@ export default function AdminPage() {
   const [selectedUser, setSelectedUser] = useState<AuthUser | null>(null)
   const [assignForm, setAssignForm]     = useState({ account_id: '', extension_id: '', role: 'user' })
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ THEME Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ── THEME ──────────────────────────────────────────────────────────────────
   const d = dark
   const th = {
     page:        d ? 'bg-[#0f1117] text-gray-100'           : 'bg-[#f3f4f6] text-gray-900',
@@ -97,7 +97,7 @@ export default function AdminPage() {
     sectionHead: d ? 'text-gray-100'   : 'text-gray-800',
   }
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ DATA LOADING (all via server-side API Ã¢â€ â€™ bypasses RLS) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ── DATA LOADING (all via server-side API → bypasses RLS) ─────────────────
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
@@ -138,7 +138,7 @@ export default function AdminPage() {
     setLoading(false)
   }, [])
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ ACCOUNT ACTIONS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ── ACCOUNT ACTIONS ────────────────────────────────────────────────────────
   async function handleCreateAccount() {
     setActionError('')
     if (!newAccount.name || !newAccount.slug || !newAccount.sip_domain) {
@@ -168,7 +168,7 @@ export default function AdminPage() {
     loadAll()
   }
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ EXTENSION ACTIONS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ── EXTENSION ACTIONS ──────────────────────────────────────────────────────
   async function handleCreateExtension() {
     setActionError('')
     if (!newExtension.account_id || !newExtension.extension_number || !newExtension.sip_password) {
@@ -207,7 +207,7 @@ export default function AdminPage() {
     setActionMessage(`Extension ${ext.extension_number} deleted.`); loadAll()
   }
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ USER ACTIONS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ── USER ACTIONS ───────────────────────────────────────────────────────────
   async function handleInviteUser() {
     setActionError('')
     if (!inviteEmail || !inviteAccount) { setActionError('Email and account are required.'); return }
@@ -259,7 +259,7 @@ export default function AdminPage() {
     else setActionError(data.error)
   }
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ FILTERS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ── FILTERS ────────────────────────────────────────────────────────────────
   const filteredAccounts = accounts.filter(a => {
     const ms = !search || a.name.toLowerCase().includes(search.toLowerCase()) || a.slug.includes(search.toLowerCase())
     return ms && (filterStatus === 'all' || a.status === filterStatus)
@@ -303,7 +303,7 @@ export default function AdminPage() {
     loadAll()
   }
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ HELPERS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ── HELPERS ────────────────────────────────────────────────────────────────
   const sc = (s: string) => {
     if (s === 'active') return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30'
     if (s === 'trial')  return 'text-amber-400 bg-amber-400/10 border-amber-400/30'
@@ -315,7 +315,7 @@ export default function AdminPage() {
   const switchTab = (t: Tab) => { setTab(t); setSearch(''); setFilterAccount('all'); setActionMessage(''); setActionError('') }
   const assignableExts = extensions.filter(e => e.account_id === assignForm.account_id)
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ LOGIN Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ── LOGIN ──────────────────────────────────────────────────────────────────
   if (auth.type === 'none') {
     return (
       <div className={`min-h-screen ${th.page} flex items-center justify-center p-4`}>
@@ -331,10 +331,10 @@ export default function AdminPage() {
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter admin password" autoFocus className={`w-full px-4 py-3 rounded-xl border text-sm outline-none transition-colors ${th.input}`} />
               </div>
               {loginError && <div className="text-red-400 text-sm">{loginError}</div>}
-              <button type="submit" className="w-full py-3 bg-[#0C2C68] hover:bg-[#0a2255] text-white rounded-xl font-semibold text-sm transition-colors">Enter Admin Portal Ã¢â€ â€™</button>
+              <button type="submit" className="w-full py-3 bg-[#0C2C68] hover:bg-[#0a2255] text-white rounded-xl font-semibold text-sm transition-colors">Enter Admin Portal →</button>
             </form>
           </div>
-          <div className={`text-center mt-6 text-xs ${th.muted}`}>UnifyLine Ã‚Â· Admin Portal Ã‚Â· Restricted Access</div>
+          <div className={`text-center mt-6 text-xs ${th.muted}`}>UnifyLine · Admin Portal · Restricted Access</div>
         </div>
       </div>
     )
@@ -350,7 +350,7 @@ export default function AdminPage() {
     { key: 'system',     label: 'System' },
   ]
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬ DASHBOARD Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ── DASHBOARD ──────────────────────────────────────────────────────────────
   return (
     <div className={`min-h-screen ${th.page} transition-colors duration-200`}>
 
@@ -370,8 +370,8 @@ export default function AdminPage() {
             ))}
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <div className="text-xs px-2 py-1 rounded-md border font-medium text-emerald-400 bg-emerald-400/10 border-emerald-400/20">Ã¢â€”Â Super Admin</div>
-            <button onClick={() => setDark(!d)} className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${th.btn}`}>{d ? 'Ã¢Ëœâ‚¬ Light' : 'Ã¢ËœÂ¾ Dark'}</button>
+            <div className="text-xs px-2 py-1 rounded-md border font-medium text-emerald-400 bg-emerald-400/10 border-emerald-400/20">● Super Admin</div>
+            <button onClick={() => setDark(!d)} className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${th.btn}`}>{d ? '☀ Light' : '☾ Dark'}</button>
             <button onClick={() => setAuth({ type: 'none' })} className="text-xs px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-400/20 transition-colors">Sign Out</button>
           </div>
         </div>
@@ -403,14 +403,14 @@ export default function AdminPage() {
 
         {actionMessage && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm flex items-center justify-between">
-            {actionMessage}<button onClick={() => setActionMessage('')} className="ml-4 opacity-60 hover:opacity-100">Ã¢Å“â€¢</button>
+            {actionMessage}<button onClick={() => setActionMessage('')} className="ml-4 opacity-60 hover:opacity-100">✕</button>
           </div>
         )}
 
         {/* TOOLBAR */}
         {!loading && (tab === 'accounts' || tab === 'extensions' || tab === 'calls' || tab === 'costs' || tab === 'users' || tab === 'leads') && (
           <div className="flex gap-3 mb-5 flex-wrap">
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search ${tab}Ã¢â‚¬Â¦`}
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search ${tab}…`}
               className={`flex-1 min-w-[200px] px-4 py-2 rounded-xl border text-sm outline-none transition-colors ${th.input}`} />
             {tab === 'accounts' && (
               <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className={`px-3 py-2 rounded-xl border text-sm outline-none ${th.input}`}>
@@ -429,7 +429,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Ã¢â€¢ÂÃ¢â€¢Â ACCOUNTS Ã¢â€¢ÂÃ¢â€¢Â */}
+        {/* ══ ACCOUNTS ══ */}
         {tab === 'accounts' && !loading && (
           <div className={`${th.surface} border rounded-2xl overflow-hidden`}>
             <table className="w-full text-sm">
@@ -450,7 +450,7 @@ export default function AdminPage() {
                     <td className={`px-4 py-3 text-xs ${th.subText}`}>{new Date(a.created_at).toLocaleDateString()}</td>
                     <td className="px-4 py-3"><div className="flex gap-2">
                       <button onClick={() => handleToggleAccount(a)} className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${a.status === 'active' ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-400/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-400/20'}`}>{a.status === 'active' ? 'Suspend' : 'Activate'}</button>
-                      <button onClick={() => { setFilterAccount(a.id); switchTab('extensions') }} className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${th.btn}`}>Exts Ã¢â€ â€™</button>
+                      <button onClick={() => { setFilterAccount(a.id); switchTab('extensions') }} className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${th.btn}`}>Exts →</button>
                     </div></td>
                   </tr>
                 ))}
@@ -460,7 +460,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Ã¢â€¢ÂÃ¢â€¢Â EXTENSIONS Ã¢â€¢ÂÃ¢â€¢Â */}
+        {/* ══ EXTENSIONS ══ */}
         {tab === 'extensions' && !loading && (
           <div className={`${th.surface} border rounded-2xl overflow-hidden`}>
             <table className="w-full text-sm">
@@ -475,8 +475,8 @@ export default function AdminPage() {
                   return (
                     <tr key={ext.id} className={`border-b ${th.row} transition-colors`}>
                       <td className="px-4 py-3 font-mono font-bold text-[#4f6ef7]">{ext.extension_number}</td>
-                      <td className={`px-4 py-3 font-medium ${th.bodyText}`}>{ext.display_name || 'Ã¢â‚¬â€'}</td>
-                      <td className={`px-4 py-3 text-xs ${th.subText}`}>{ext.account_name || 'Ã¢â‚¬â€'}</td>
+                      <td className={`px-4 py-3 font-medium ${th.bodyText}`}>{ext.display_name || '—'}</td>
+                      <td className={`px-4 py-3 text-xs ${th.subText}`}>{ext.account_name || '—'}</td>
                       <td className={`px-4 py-3 font-mono text-xs ${th.monoText}`}>{ext.sip_password}</td>
                       <td className={`px-4 py-3 text-xs ${assignedUser ? 'text-emerald-400' : th.subText}`}>{assignedUser ? assignedUser.email : <span className="italic">Unassigned</span>}</td>
                       <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${ext.active ? sc('active') : sc('suspended')}`}>{ext.active ? 'Active' : 'Inactive'}</span></td>
@@ -493,7 +493,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Ã¢â€¢ÂÃ¢â€¢Â USERS Ã¢â€¢ÂÃ¢â€¢Â */}
+        {/* ══ USERS ══ */}
         {tab === 'users' && !loading && (
           <div className={`${th.surface} border rounded-2xl overflow-hidden`}>
             <table className="w-full text-sm">
@@ -507,11 +507,11 @@ export default function AdminPage() {
                   <tr key={u.id} className={`border-b ${th.row} transition-colors`}>
                     <td className="px-4 py-3">
                       <div className={`font-medium text-sm ${th.bodyText}`}>{u.email}</div>
-                      <div className={`font-mono text-xs ${th.subText}`}>{u.id.slice(0,8)}Ã¢â‚¬Â¦</div>
+                      <div className={`font-mono text-xs ${th.subText}`}>{u.id.slice(0,8)}…</div>
                     </td>
                     <td className={`px-4 py-3 text-xs ${th.subText}`}>{u.account_name || <span className="italic text-amber-400">Not linked</span>}</td>
-                    <td className="px-4 py-3">{u.extension ? <span className="font-mono font-bold text-[#4f6ef7]">{u.extension}{u.display_name ? ` Ã‚Â· ${u.display_name}` : ''}</span> : <span className={`italic text-xs ${th.subText}`}>None</span>}</td>
-                    <td className="px-4 py-3">{u.role ? <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${u.role === 'admin' ? 'text-purple-400 bg-purple-400/10 border-purple-400/30' : sc('active')}`}>{u.role}</span> : 'Ã¢â‚¬â€'}</td>
+                    <td className="px-4 py-3">{u.extension ? <span className="font-mono font-bold text-[#4f6ef7]">{u.extension}{u.display_name ? ` · ${u.display_name}` : ''}</span> : <span className={`italic text-xs ${th.subText}`}>None</span>}</td>
+                    <td className="px-4 py-3">{u.role ? <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${u.role === 'admin' ? 'text-purple-400 bg-purple-400/10 border-purple-400/30' : sc('active')}`}>{u.role}</span> : '—'}</td>
                     <td className={`px-4 py-3 text-xs ${th.subText}`}>{u.last_sign_in ? new Date(u.last_sign_in).toLocaleDateString() : 'Never'}</td>
                     <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${u.linked ? sc('active') : 'text-amber-400 bg-amber-400/10 border-amber-400/30'}`}>{u.linked ? 'Linked' : 'Unlinked'}</span></td>
                     <td className="px-4 py-3"><div className="flex gap-2">
@@ -526,7 +526,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Ã¢â€¢ÂÃ¢â€¢Â CALL LOGS Ã¢â€¢ÂÃ¢â€¢Â */}
+        {/* ══ CALL LOGS ══ */}
         {tab === 'calls' && !loading && (
           <div className={`${th.surface} border rounded-2xl overflow-hidden`}>
             <table className="w-full text-sm">
@@ -543,11 +543,11 @@ export default function AdminPage() {
                     <>
                       <tr key={call.id} className={`border-b ${th.row} transition-colors cursor-pointer`} onClick={() => setExpandedCall(isExp ? null : call.id)}>
                         <td className={`px-4 py-3 font-mono text-xs ${th.monoText}`}>{call.from_number}</td>
-                        <td className={`px-4 py-3 font-mono text-xs ${th.monoText}`}>{call.to_number || 'Ã¢â‚¬â€'}</td>
-                        <td className={`px-4 py-3 text-xs ${th.subText}`}>{acctName || 'Ã¢â‚¬â€'}</td>
+                        <td className={`px-4 py-3 font-mono text-xs ${th.monoText}`}>{call.to_number || '—'}</td>
+                        <td className={`px-4 py-3 text-xs ${th.subText}`}>{acctName || '—'}</td>
                         <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full border ${call.direction === 'inbound' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30' : 'text-blue-400 bg-blue-400/10 border-blue-400/30'}`}>{call.direction}</span></td>
                         <td className={`px-4 py-3 text-xs ${th.subText}`}>{fmt(call.duration_sec)}</td>
-                        <td className={`px-4 py-3 text-xs ${th.subText} max-w-xs`}><div className="flex items-start gap-2"><span className={isExp ? '' : 'truncate max-w-[240px] block'}>{call.ai_summary || 'Ã¢â‚¬â€'}</span>{call.ai_summary && <span className={`shrink-0 text-xs ${th.muted}`}>{isExp ? 'Ã¢â€“Â²' : 'Ã¢â€“Â¼'}</span>}</div></td>
+                        <td className={`px-4 py-3 text-xs ${th.subText} max-w-xs`}><div className="flex items-start gap-2"><span className={isExp ? '' : 'truncate max-w-[240px] block'}>{call.ai_summary || '—'}</span>{call.ai_summary && <span className={`shrink-0 text-xs ${th.muted}`}>{isExp ? '▲' : '▼'}</span>}</div></td>
                         <td className={`px-4 py-3 text-xs ${th.subText} whitespace-nowrap`}>{new Date(call.created_at).toLocaleString()}</td>
                       </tr>
                       {isExp && call.ai_summary && (
@@ -666,7 +666,7 @@ export default function AdminPage() {
           )
         })()}
 
-        {/* Ã¢â€¢ÂÃ¢â€¢Â LEADS Ã¢â€¢ÂÃ¢â€¢Â */}
+        {/* ══ LEADS ══ */}
         {tab === 'leads' && !loading && (
           <div className={`${th.surface} border rounded-2xl overflow-hidden`}>
             <table className="w-full text-sm">
@@ -690,8 +690,8 @@ export default function AdminPage() {
                         <td className={`px-4 py-3 font-medium ${th.bodyText}`}>{lead.business_name}</td>
                         <td className={`px-4 py-3 text-xs ${th.subText}`}>{lead.contact_name}</td>
                         <td className={`px-4 py-3 font-mono text-xs ${th.monoText}`}>{lead.email}</td>
-                        <td className={`px-4 py-3 font-mono text-xs ${th.monoText}`}>{lead.phone || 'Ã¢â‚¬â€'}</td>
-                        <td className={`px-4 py-3 text-xs ${th.subText}`}>{lead.industry || 'Ã¢â‚¬â€'}</td>
+                        <td className={`px-4 py-3 font-mono text-xs ${th.monoText}`}>{lead.phone || '—'}</td>
+                        <td className={`px-4 py-3 text-xs ${th.subText}`}>{lead.industry || '—'}</td>
                         <td className="px-4 py-3">
                           <select
                             value={lead.status}
@@ -721,23 +721,23 @@ export default function AdminPage() {
                     </>
                   )
                 })}
-                {filteredLeads.length === 0 && <tr><td colSpan={8} className={`px-4 py-14 text-center text-sm ${th.emptyText}`}>No leads yet Ã¢â‚¬â€ submissions from /get-started will appear here</td></tr>}
+                {filteredLeads.length === 0 && <tr><td colSpan={8} className={`px-4 py-14 text-center text-sm ${th.emptyText}`}>No leads yet — submissions from /get-started will appear here</td></tr>}
               </tbody>
             </table>
           </div>
         )}
 
-        {/* Ã¢â€¢ÂÃ¢â€¢Â SYSTEM Ã¢â€¢ÂÃ¢â€¢Â */}
+        {/* ══ SYSTEM ══ */}
         {tab === 'system' && !loading && (
           <div className="space-y-4">
             <div className={`${th.surface} border rounded-2xl p-6`}>
-              <h3 className={`font-semibold mb-4 ${th.sectionHead}`}>Your Privileges Ã¢â‚¬â€ Super Admin</h3>
+              <h3 className={`font-semibold mb-4 ${th.sectionHead}`}>Your Privileges — Super Admin</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {['Create & manage accounts','Suspend / activate accounts','Create extensions','Enable / disable / delete extensions','Invite users & assign extensions','View all call logs across tenants','Reset user passwords','Filter by account / tenant','Full system overview'].map(p => (
-                  <div key={p} className={`${th.surface2} rounded-xl p-3 border ${th.rowDivider}`}><div className="text-xs font-semibold text-emerald-400">Ã¢Å“â€œ {p}</div></div>
+                  <div key={p} className={`${th.surface2} rounded-xl p-3 border ${th.rowDivider}`}><div className="text-xs font-semibold text-emerald-400">✓ {p}</div></div>
                 ))}
               </div>
-              <div className={`mt-4 pt-4 border-t ${th.rowDivider} text-xs ${th.subText}`}><strong className={th.muted}>Roadmap:</strong> Multi-admin with Viewer/Support/Manager roles Ã‚Â· Audit log Ã‚Â· Per-admin email login</div>
+              <div className={`mt-4 pt-4 border-t ${th.rowDivider} text-xs ${th.subText}`}><strong className={th.muted}>Roadmap:</strong> Multi-admin with Viewer/Support/Manager roles · Audit log · Per-admin email login</div>
             </div>
             <div className={`${th.surface} border rounded-2xl p-6`}>
               <h3 className={`font-semibold mb-4 ${th.sectionHead}`}>Infrastructure</h3>
@@ -766,11 +766,11 @@ export default function AdminPage() {
         )}
       </div>
 
-      {/* Ã¢â€¢ÂÃ¢â€¢Â MODAL: New Account Ã¢â€¢ÂÃ¢â€¢Â */}
+      {/* ══ MODAL: New Account ══ */}
       {modalType === 'new_account' && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className={`${th.modal} border rounded-2xl p-6 w-full max-w-md shadow-2xl`}>
-            <div className="flex items-center justify-between mb-5"><h3 className={`font-semibold text-base ${th.bodyText}`}>New Account</h3><button onClick={closeModal} className={`text-xl leading-none ${th.muted}`}>Ã¢Å“â€¢</button></div>
+            <div className="flex items-center justify-between mb-5"><h3 className={`font-semibold text-base ${th.bodyText}`}>New Account</h3><button onClick={closeModal} className={`text-xl leading-none ${th.muted}`}>✕</button></div>
             <div className="space-y-3">
               {[{label:'Account Name',key:'name',ph:'e.g. MTI Premium Charters'},{label:'Slug',key:'slug',ph:'e.g. mti'},{label:'SIP Domain',key:'sip_domain',ph:'e.g. mti.unifyline.local'},{label:'Brand Color',key:'brand_primary_color',ph:'#0C2C68'}].map(f => (
                 <div key={f.key}><label className={`block text-xs font-semibold uppercase tracking-wider mb-1 ${th.modalLabel}`}>{f.label}</label>
@@ -784,21 +784,21 @@ export default function AdminPage() {
             {actionError && <div className="mt-3 text-sm text-red-400">{actionError}</div>}
             <div className="flex gap-3 mt-5">
               <button onClick={closeModal} className={`flex-1 py-2.5 rounded-xl text-sm ${th.btn}`}>Cancel</button>
-              <button onClick={handleCreateAccount} disabled={actionLoading} className="flex-1 py-2.5 bg-[#0C2C68] hover:bg-[#0a2255] text-white rounded-xl text-sm font-medium disabled:opacity-50">{actionLoading?'CreatingÃ¢â‚¬Â¦':'Create Account'}</button>
+              <button onClick={handleCreateAccount} disabled={actionLoading} className="flex-1 py-2.5 bg-[#0C2C68] hover:bg-[#0a2255] text-white rounded-xl text-sm font-medium disabled:opacity-50">{actionLoading?'Creating…':'Create Account'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Ã¢â€¢ÂÃ¢â€¢Â MODAL: New Extension Ã¢â€¢ÂÃ¢â€¢Â */}
+      {/* ══ MODAL: New Extension ══ */}
       {modalType === 'new_extension' && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className={`${th.modal} border rounded-2xl p-6 w-full max-w-md shadow-2xl`}>
-            <div className="flex items-center justify-between mb-5"><h3 className={`font-semibold text-base ${th.bodyText}`}>New Extension</h3><button onClick={closeModal} className={`text-xl leading-none ${th.muted}`}>Ã¢Å“â€¢</button></div>
+            <div className="flex items-center justify-between mb-5"><h3 className={`font-semibold text-base ${th.bodyText}`}>New Extension</h3><button onClick={closeModal} className={`text-xl leading-none ${th.muted}`}>✕</button></div>
             <div className="space-y-3">
               <div><label className={`block text-xs font-semibold uppercase tracking-wider mb-1 ${th.modalLabel}`}>Account</label>
               <select value={newExtension.account_id} onChange={e => setNewExtension({...newExtension,account_id:e.target.value})} className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none ${th.input}`}>
-                <option value="">Select accountÃ¢â‚¬Â¦</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                <option value="">Select account…</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select></div>
               {[{label:'Extension Number',key:'extension_number',ph:'e.g. 203'},{label:'Display Name',key:'display_name',ph:'e.g. John Smith'},{label:'SIP Password',key:'sip_password',ph:'e.g. MTI203secure!'},{label:'Email (optional)',key:'email',ph:'john@company.com'}].map(f => (
                 <div key={f.key}><label className={`block text-xs font-semibold uppercase tracking-wider mb-1 ${th.modalLabel}`}>{f.label}</label>
@@ -808,50 +808,50 @@ export default function AdminPage() {
             {actionError && <div className="mt-3 text-sm text-red-400">{actionError}</div>}
             <div className="flex gap-3 mt-5">
               <button onClick={closeModal} className={`flex-1 py-2.5 rounded-xl text-sm ${th.btn}`}>Cancel</button>
-              <button onClick={handleCreateExtension} disabled={actionLoading} className="flex-1 py-2.5 bg-[#0C2C68] hover:bg-[#0a2255] text-white rounded-xl text-sm font-medium disabled:opacity-50">{actionLoading?'CreatingÃ¢â‚¬Â¦':'Create Extension'}</button>
+              <button onClick={handleCreateExtension} disabled={actionLoading} className="flex-1 py-2.5 bg-[#0C2C68] hover:bg-[#0a2255] text-white rounded-xl text-sm font-medium disabled:opacity-50">{actionLoading?'Creating…':'Create Extension'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Ã¢â€¢ÂÃ¢â€¢Â MODAL: Invite User Ã¢â€¢ÂÃ¢â€¢Â */}
+      {/* ══ MODAL: Invite User ══ */}
       {modalType === 'invite_user' && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className={`${th.modal} border rounded-2xl p-6 w-full max-w-md shadow-2xl`}>
-            <div className="flex items-center justify-between mb-2"><h3 className={`font-semibold text-base ${th.bodyText}`}>Invite User</h3><button onClick={closeModal} className={`text-xl leading-none ${th.muted}`}>Ã¢Å“â€¢</button></div>
+            <div className="flex items-center justify-between mb-2"><h3 className={`font-semibold text-base ${th.bodyText}`}>Invite User</h3><button onClick={closeModal} className={`text-xl leading-none ${th.muted}`}>✕</button></div>
             <p className={`text-xs mb-4 ${th.subText}`}>A magic link invite will be sent. Once they sign up, use the Assign button to link their extension.</p>
             <div className="space-y-3">
               <div><label className={`block text-xs font-semibold uppercase tracking-wider mb-1 ${th.modalLabel}`}>Email Address</label>
               <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="user@company.com" autoFocus className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none ${th.input}`} /></div>
               <div><label className={`block text-xs font-semibold uppercase tracking-wider mb-1 ${th.modalLabel}`}>Account</label>
               <select value={inviteAccount} onChange={e => setInviteAccount(e.target.value)} className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none ${th.input}`}>
-                <option value="">Select accountÃ¢â‚¬Â¦</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                <option value="">Select account…</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select></div>
             </div>
             {actionError && <div className="mt-3 text-sm text-red-400">{actionError}</div>}
             <div className="flex gap-3 mt-5">
               <button onClick={closeModal} className={`flex-1 py-2.5 rounded-xl text-sm ${th.btn}`}>Cancel</button>
-              <button onClick={handleInviteUser} disabled={actionLoading || !inviteEmail || !inviteAccount} className="flex-1 py-2.5 bg-[#0C2C68] hover:bg-[#0a2255] text-white rounded-xl text-sm font-medium disabled:opacity-50">{actionLoading?'SendingÃ¢â‚¬Â¦':'Send Invite'}</button>
+              <button onClick={handleInviteUser} disabled={actionLoading || !inviteEmail || !inviteAccount} className="flex-1 py-2.5 bg-[#0C2C68] hover:bg-[#0a2255] text-white rounded-xl text-sm font-medium disabled:opacity-50">{actionLoading?'Sending…':'Send Invite'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Ã¢â€¢ÂÃ¢â€¢Â MODAL: Assign Extension Ã¢â€¢ÂÃ¢â€¢Â */}
+      {/* ══ MODAL: Assign Extension ══ */}
       {modalType === 'assign_user' && selectedUser && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className={`${th.modal} border rounded-2xl p-6 w-full max-w-md shadow-2xl`}>
-            <div className="flex items-center justify-between mb-2"><h3 className={`font-semibold text-base ${th.bodyText}`}>Assign Extension</h3><button onClick={closeModal} className={`text-xl leading-none ${th.muted}`}>Ã¢Å“â€¢</button></div>
+            <div className="flex items-center justify-between mb-2"><h3 className={`font-semibold text-base ${th.bodyText}`}>Assign Extension</h3><button onClick={closeModal} className={`text-xl leading-none ${th.muted}`}>✕</button></div>
             <div className={`text-xs mb-4 px-3 py-2 rounded-lg ${th.surface2} ${th.subText}`}>Assigning: <strong className={th.bodyText}>{selectedUser.email}</strong></div>
             <div className="space-y-3">
               <div><label className={`block text-xs font-semibold uppercase tracking-wider mb-1 ${th.modalLabel}`}>Account</label>
               <select value={assignForm.account_id} onChange={e => setAssignForm({...assignForm,account_id:e.target.value,extension_id:''})} className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none ${th.input}`}>
-                <option value="">Select accountÃ¢â‚¬Â¦</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                <option value="">Select account…</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select></div>
               <div><label className={`block text-xs font-semibold uppercase tracking-wider mb-1 ${th.modalLabel}`}>Extension</label>
               <select value={assignForm.extension_id} onChange={e => setAssignForm({...assignForm,extension_id:e.target.value})} disabled={!assignForm.account_id} className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none ${th.input} disabled:opacity-50`}>
-                <option value="">Select extensionÃ¢â‚¬Â¦</option>
-                {assignableExts.map(e => <option key={e.id} value={e.id}>{e.extension_number} Ã¢â‚¬â€ {e.display_name || 'unnamed'}{e.user_id ? ' (assigned)' : ''}</option>)}
+                <option value="">Select extension…</option>
+                {assignableExts.map(e => <option key={e.id} value={e.id}>{e.extension_number} — {e.display_name || 'unnamed'}{e.user_id ? ' (assigned)' : ''}</option>)}
               </select></div>
               <div><label className={`block text-xs font-semibold uppercase tracking-wider mb-1 ${th.modalLabel}`}>Role</label>
               <select value={assignForm.role} onChange={e => setAssignForm({...assignForm,role:e.target.value})} className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none ${th.input}`}>
@@ -861,7 +861,7 @@ export default function AdminPage() {
             {actionError && <div className="mt-3 text-sm text-red-400">{actionError}</div>}
             <div className="flex gap-3 mt-5">
               <button onClick={closeModal} className={`flex-1 py-2.5 rounded-xl text-sm ${th.btn}`}>Cancel</button>
-              <button onClick={handleAssignUser} disabled={actionLoading || !assignForm.account_id || !assignForm.extension_id} className="flex-1 py-2.5 bg-[#0C2C68] hover:bg-[#0a2255] text-white rounded-xl text-sm font-medium disabled:opacity-50">{actionLoading?'SavingÃ¢â‚¬Â¦':'Assign Extension'}</button>
+              <button onClick={handleAssignUser} disabled={actionLoading || !assignForm.account_id || !assignForm.extension_id} className="flex-1 py-2.5 bg-[#0C2C68] hover:bg-[#0a2255] text-white rounded-xl text-sm font-medium disabled:opacity-50">{actionLoading?'Saving…':'Assign Extension'}</button>
             </div>
           </div>
         </div>

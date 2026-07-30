@@ -145,7 +145,7 @@ export default function DashboardLayoutClient({
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* DESKTOP SIDEBAR â€” uses sidebar-bg class set by server CSS, no flash */}
+      {/* DESKTOP SIDEBAR — uses sidebar-bg class set by server CSS, no flash */}
       <aside
         className="hidden md:flex w-56 text-white flex-col flex-shrink-0 sidebar-bg"
         style={{ backgroundColor: bg }}

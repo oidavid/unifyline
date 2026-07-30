@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useMemo, useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -38,7 +38,7 @@ export default function ReportsClient({
     return calls.filter(c => new Date(c.created_at) >= cutoff)
   }, [calls, range])
 
-  // â”€â”€ Key metrics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Key metrics ──────────────────────────────────────────────
   const totalCalls = filteredCalls.length
   const uniqueCallers = new Set(filteredCalls.map((c: CDR) => c.from_number)).size
   const totalMinutes = Math.round(filteredCalls.reduce((sum: number, c: CDR) => sum + (c.duration_sec || 0), 0) / 60)
@@ -48,7 +48,7 @@ export default function ReportsClient({
   const callsWithSummary = filteredCalls.filter((c: CDR) => c.ai_summary).length
   const captureRate = totalCalls > 0 ? Math.round((callsWithSummary / totalCalls) * 100) : 0
 
-  // â”€â”€ Calls per day (line chart) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Calls per day (line chart) ──────────────────────────────
   const callsByDay = useMemo(() => {
     const map = new Map<string, number>()
     filteredCalls.forEach((c: CDR) => {
@@ -61,7 +61,7 @@ export default function ReportsClient({
       .slice(-30)
   }, [filteredCalls])
 
-  // â”€â”€ Peak hours (bar chart) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Peak hours (bar chart) ───────────────────────────────────
   const callsByHour = useMemo(() => {
     const hours = Array.from({ length: 24 }, (_, i) => ({ hour: i, label: formatHour(i), count: 0 }))
     filteredCalls.forEach((c: CDR) => {
@@ -71,7 +71,7 @@ export default function ReportsClient({
     return hours
   }, [filteredCalls])
 
-  // â”€â”€ Top callers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Top callers ──────────────────────────────────────────────
   const topCallers = useMemo(() => {
     const map = new Map<string, number>()
     filteredCalls.forEach((c: CDR) => {
@@ -83,7 +83,7 @@ export default function ReportsClient({
       .slice(0, 5)
   }, [filteredCalls])
 
-  // â”€â”€ Day of week distribution (pie) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Day of week distribution (pie) ───────────────────────────
   const callsByDayOfWeek = useMemo(() => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     const counts = days.map(d => ({ name: d, value: 0 }))
@@ -133,7 +133,7 @@ export default function ReportsClient({
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3 print:mb-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold text-gray-900">Reports</h2>
-          <p className="text-gray-500 mt-1 text-sm">{accountName} â€” call activity insights</p>
+          <p className="text-gray-500 mt-1 text-sm">{accountName} — call activity insights</p>
         </div>
         <div className="flex items-center gap-2 print:hidden">
           <div className="flex bg-gray-100 rounded-lg p-1">
@@ -160,9 +160,9 @@ export default function ReportsClient({
 
       {/* Print-only header */}
       <div className="hidden print:block mb-6">
-        <h1 className="text-2xl font-bold">{accountName} â€” Call Report</h1>
+        <h1 className="text-2xl font-bold">{accountName} — Call Report</h1>
         <p className="text-sm text-gray-500">
-          {range === 'all' ? 'All time' : `Last ${range.replace('d', ' days')}`} Â· Generated {new Date().toLocaleDateString()}
+          {range === 'all' ? 'All time' : `Last ${range.replace('d', ' days')}`} · Generated {new Date().toLocaleDateString()}
         </p>
       </div>
 
