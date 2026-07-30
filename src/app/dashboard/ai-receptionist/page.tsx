@@ -1,10 +1,11 @@
-﻿'use client'
+'use client'
 import React from 'react'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { Mic, Save, RefreshCw } from 'lucide-react'
+import { Mic, Save, RefreshCw, PhoneForwarded } from 'lucide-react'
 
 type Config = { system_prompt: string; greeting_text: string; knowledge_base: string; active: boolean }
+type DidOption = { did_number: string; label: string; mode: string }
 
 export default function AIReceptionistPage() {
   const [config, setConfig] = useState<Config>({ system_prompt: '', greeting_text: '', knowledge_base: '', active: true })
@@ -12,21 +13,42 @@ export default function AIReceptionistPage() {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [accountId, setAccountId] = useState('')
+  const [dids, setDids] = useState<DidOption[]>([])
+  const [selectedDid, setSelectedDid] = useState('') // '' = account-level default
   const supabase = createClient()
 
-  useEffect(() => { loadConfig() }, [])
+  useEffect(() => { initAccount() }, [])
+  useEffect(() => { if (accountId) loadConfig() }, [accountId, selectedDid])
 
-  async function loadConfig() {
+  async function initAccount() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       const { data: auData } = await supabase.from('account_users').select('account_id').eq('user_id', user.id).single()
       const accId = auData?.account_id || user.id
       setAccountId(accId)
-      const res = await fetch(`/api/receptionist-config?account_id=${accId}`)
+    } catch (e) { console.error('[initAccount]', e) }
+  }
+
+  async function loadConfig() {
+    try {
+      const url = selectedDid
+        ? `/api/receptionist-config?account_id=${accountId}&did_number=${selectedDid}`
+        : `/api/receptionist-config?account_id=${accountId}`
+      const res = await fetch(url)
       if (res.ok) {
         const data = await res.json()
-        if (data) setConfig({ system_prompt: data.system_prompt || '', greeting_text: data.greeting_text || '', knowledge_base: data.knowledge_base || '', active: data.active ?? true })
+        setDids(data.dids || [])
+        if (data.config) {
+          setConfig({
+            system_prompt: data.config.system_prompt || '',
+            greeting_text: data.config.greeting_text || '',
+            knowledge_base: data.config.knowledge_base || '',
+            active: data.config.active ?? true,
+          })
+        } else {
+          setConfig({ system_prompt: '', greeting_text: '', knowledge_base: '', active: true })
+        }
       }
     } catch (e) { console.error('[loadConfig]', e) }
   }
@@ -38,7 +60,11 @@ export default function AIReceptionistPage() {
       const res = await fetch('/api/receptionist-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ account_id: accountId, ...config }),
+        body: JSON.stringify({
+          account_id: accountId,
+          did_number: selectedDid || undefined,
+          ...config,
+        }),
       })
       if (!res.ok) throw new Error('Save failed')
       setSaved(true)
@@ -47,9 +73,15 @@ export default function AIReceptionistPage() {
     setLoading(false)
   }
 
+  function fmtDid(d: string) {
+    const digits = d.replace(/\D/g, '')
+    if (digits.length !== 10) return d
+    return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`
+  }
+
   return (
     <div className="p-4 md:p-8">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-xl md:text-2xl font-bold text-gray-900">AI Receptionist</h2>
           <p className="text-gray-500 mt-1 text-sm">Configure your AI-powered call answering</p>
@@ -64,6 +96,26 @@ export default function AIReceptionistPage() {
           </button>
         </div>
       </div>
+
+      {dids.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-4 mb-4 flex items-center gap-3 flex-wrap">
+          <PhoneForwarded size={16} className="text-gray-400 flex-shrink-0" />
+          <label className="text-sm font-medium text-gray-700 flex-shrink-0">Editing:</label>
+          <select
+            value={selectedDid}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedDid(e.target.value)}
+            className="flex-1 min-w-[200px] border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none"
+          >
+            <option value="">Default (account-wide)</option>
+            {dids.map(d => (
+              <option key={d.did_number} value={d.did_number}>
+                {d.label} — {fmtDid(d.did_number)} ({d.mode})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
           <div className="flex items-center gap-2 mb-3"><Mic size={18} style={{ color: 'var(--brand, #5B4A9B)' }} /><h3 className="font-semibold text-gray-900">AI Greeting</h3></div>
