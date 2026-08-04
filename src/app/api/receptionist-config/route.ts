@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       // and department are intentionally left untouched here.
       const { data: existing } = await admin
         .from('did_receptionist_config')
-        .select('id, account_id')
+        .select('account_id')
         .eq('did_number', did_number)
         .single()
 
