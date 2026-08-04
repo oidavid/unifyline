@@ -15,6 +15,7 @@ export default function AIReceptionistPage() {
   const [accountId, setAccountId] = useState('')
   const [dids, setDids] = useState<DidOption[]>([])
   const [selectedDid, setSelectedDid] = useState('') // '' = account-level default
+  const [configLoading, setConfigLoading] = useState(false)
   const supabase = createClient()
 
   useEffect(() => { initAccount() }, [])
@@ -31,6 +32,7 @@ export default function AIReceptionistPage() {
   }
 
   async function loadConfig() {
+    setConfigLoading(true)
     try {
       const url = selectedDid
         ? `/api/receptionist-config?account_id=${accountId}&did_number=${selectedDid}`
@@ -51,6 +53,7 @@ export default function AIReceptionistPage() {
         }
       }
     } catch (e) { console.error('[loadConfig]', e) }
+    setConfigLoading(false)
   }
 
   async function handleSave() {
@@ -109,7 +112,7 @@ export default function AIReceptionistPage() {
             <option value="">Default (account-wide)</option>
             {dids.map(d => (
               <option key={d.did_number} value={d.did_number}>
-                {d.label} — {fmtDid(d.did_number)} ({d.mode})
+                {d.label} â€” {fmtDid(d.did_number)} ({d.mode})
               </option>
             ))}
           </select>
@@ -135,7 +138,7 @@ export default function AIReceptionistPage() {
       </div>
       {error && <p className="mt-3 text-sm text-red-500 text-right">{error}</p>}
       <div className="mt-5 flex justify-end">
-        <button onClick={handleSave} disabled={loading} className="flex items-center gap-2 text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-50" style={{ background: 'var(--brand, #5B4A9B)' }}>
+        <button onClick={handleSave} disabled={loading || configLoading} className="flex items-center gap-2 text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition disabled:opacity-50" style={{ background: 'var(--brand, #5B4A9B)' }}>
           <Save size={16} />{saved ? 'Saved!' : loading ? 'Saving...' : 'Save Configuration'}
         </button>
       </div>
