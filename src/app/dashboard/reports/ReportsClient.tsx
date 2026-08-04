@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Legend,
 } from 'recharts'
-import { Phone, Users, Clock, TrendingUp, Calendar, Mic, Download } from 'lucide-react'
+import { Phone, Users, Clock, TrendingUp, Calendar, Mic, Download, X } from 'lucide-react'
 
 type CDR = {
   id: string
@@ -16,6 +16,7 @@ type CDR = {
 }
 
 type Range = '7d' | '30d' | '90d' | 'all'
+type Selection = { label: string; calls: CDR[] } | null
 
 export default function ReportsClient({
   calls,
@@ -27,6 +28,7 @@ export default function ReportsClient({
   accountName: string
 }) {
   const [range, setRange] = useState<Range>('30d')
+  const [selection, setSelection] = useState<Selection>(null)
   const isDark = ['#1A1008', '#0A0A0A', '#1C1813', '#0F0C08'].includes(primaryColor)
   const accentColor = isDark ? '#C9A23F' : primaryColor
 
@@ -50,16 +52,24 @@ export default function ReportsClient({
 
   // ── Calls per day (line chart) ──────────────────────────────
   const callsByDay = useMemo(() => {
-    const map = new Map<string, number>()
+    const map = new Map<string, CDR[]>()
     filteredCalls.forEach((c: CDR) => {
       const day = new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      map.set(day, (map.get(day) || 0) + 1)
+      if (!map.has(day)) map.set(day, [])
+      map.get(day)!.push(c)
     })
     return Array.from(map.entries())
-      .map(([date, count]) => ({ date, count }))
+      .map(([date, dayCalls]) => ({ date, count: dayCalls.length }))
       .reverse()
       .slice(-30)
   }, [filteredCalls])
+
+  function handleDateClick(dateLabel: string) {
+    const matches = filteredCalls.filter((c: CDR) =>
+      new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) === dateLabel
+    )
+    setSelection({ label: `Calls on ${dateLabel}`, calls: matches })
+  }
 
   // ── Peak hours (bar chart) ───────────────────────────────────
   const callsByHour = useMemo(() => {
@@ -70,6 +80,11 @@ export default function ReportsClient({
     })
     return hours
   }, [filteredCalls])
+
+  function handleHourClick(hour: number, label: string) {
+    const matches = filteredCalls.filter((c: CDR) => new Date(c.created_at).getHours() === hour)
+    setSelection({ label: `Calls at ${label}`, calls: matches })
+  }
 
   // ── Top callers ──────────────────────────────────────────────
   const topCallers = useMemo(() => {
@@ -83,16 +98,27 @@ export default function ReportsClient({
       .slice(0, 5)
   }, [filteredCalls])
 
+  function handleCallerClick(number: string) {
+    const matches = filteredCalls.filter((c: CDR) => c.from_number === number)
+    setSelection({ label: `Calls from ${formatPhone(number)}`, calls: matches })
+  }
+
   // ── Day of week distribution (pie) ───────────────────────────
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const callsByDayOfWeek = useMemo(() => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    const counts = days.map(d => ({ name: d, value: 0 }))
+    const counts = DAY_NAMES.map(d => ({ name: d, value: 0 }))
     filteredCalls.forEach((c: CDR) => {
       const d = new Date(c.created_at).getDay()
       counts[d].value++
     })
     return counts.filter(c => c.value > 0)
   }, [filteredCalls])
+
+  function handleDayOfWeekClick(dayName: string) {
+    const dayIndex = DAY_NAMES.indexOf(dayName)
+    const matches = filteredCalls.filter((c: CDR) => new Date(c.created_at).getDay() === dayIndex)
+    setSelection({ label: `Calls on ${dayName}days`, calls: matches })
+  }
 
   const PIE_COLORS = isDark
     ? ['#E8C26A', '#C9A23F', '#A67C20', '#8B6914', '#6B5A2A', '#4A3D1A', '#2A241A']
@@ -115,16 +141,21 @@ export default function ReportsClient({
     return num
   }
 
+  function formatDuration(sec: number) {
+    if (!sec) return '0:00'
+    return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`
+  }
+
   function handlePrint() {
     window.print()
   }
 
   const metrics = [
-    { label: 'Total Calls', value: totalCalls, icon: Phone },
-    { label: 'Unique Callers', value: uniqueCallers, icon: Users },
-    { label: 'Total Minutes', value: totalMinutes, icon: Clock },
-    { label: 'Avg Call Length', value: `${Math.floor(avgDuration / 60)}:${String(avgDuration % 60).padStart(2, '0')}`, icon: TrendingUp },
-    { label: 'Lead Capture Rate', value: `${captureRate}%`, icon: Mic },
+    { label: 'Total Calls', value: totalCalls, icon: Phone, onClick: () => setSelection({ label: 'All Calls', calls: filteredCalls }) },
+    { label: 'Unique Callers', value: uniqueCallers, icon: Users, onClick: null },
+    { label: 'Total Minutes', value: totalMinutes, icon: Clock, onClick: null },
+    { label: 'Avg Call Length', value: `${Math.floor(avgDuration / 60)}:${String(avgDuration % 60).padStart(2, '0')}`, icon: TrendingUp, onClick: null },
+    { label: 'Lead Capture Rate', value: `${captureRate}%`, icon: Mic, onClick: () => setSelection({ label: 'Calls with AI Summary', calls: filteredCalls.filter(c => c.ai_summary) }) },
   ]
 
   return (
@@ -140,7 +171,7 @@ export default function ReportsClient({
             {(['7d', '30d', '90d', 'all'] as Range[]).map(r => (
               <button
                 key={r}
-                onClick={() => setRange(r)}
+                onClick={() => { setRange(r); setSelection(null) }}
                 className="px-3 py-1.5 text-xs font-medium rounded-md transition"
                 style={range === r ? { background: accentColor, color: isDark ? '#0A0A0A' : '#FFFFFF' } : { color: '#6B7280' }}
               >
@@ -168,8 +199,12 @@ export default function ReportsClient({
 
       {/* Key metrics */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        {metrics.map(({ label, value, icon: Icon }) => (
-          <div key={label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 print:shadow-none print:border-gray-300">
+        {metrics.map(({ label, value, icon: Icon, onClick }) => (
+          <div
+            key={label}
+            onClick={onClick || undefined}
+            className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 print:shadow-none print:border-gray-300 ${onClick ? 'cursor-pointer hover:shadow-md hover:border-gray-200 transition' : ''}`}
+          >
             <div className="flex items-center gap-2 mb-1">
               <Icon size={15} style={{ color: accentColor }} />
               <p className="text-xs text-gray-500 font-medium">{label}</p>
@@ -189,35 +224,49 @@ export default function ReportsClient({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Calls over time */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 lg:col-span-2 print:shadow-none print:border-gray-300 print:break-inside-avoid">
-            <h3 className="font-semibold text-gray-900 mb-4 text-sm">Call Volume Over Time</h3>
+            <h3 className="font-semibold text-gray-900 mb-1 text-sm">Call Volume Over Time</h3>
+            <p className="text-xs text-gray-400 mb-3 print:hidden">Click a point to see that day's calls</p>
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={callsByDay}>
+              <LineChart
+                data={callsByDay}
+                onClick={(e: any) => { if (e && e.activeLabel) handleDateClick(e.activeLabel) }}
+                style={{ cursor: 'pointer' }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#9CA3AF" />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="#9CA3AF" />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Line type="monotone" dataKey="count" stroke={accentColor} strokeWidth={2.5} dot={{ r: 3 }} name="Calls" />
+                <Line type="monotone" dataKey="count" stroke={accentColor} strokeWidth={2.5} dot={{ r: 4, cursor: 'pointer' }} activeDot={{ r: 6, cursor: 'pointer' }} name="Calls" />
               </LineChart>
             </ResponsiveContainer>
           </div>
 
           {/* Peak hours */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 print:shadow-none print:border-gray-300 print:break-inside-avoid">
-            <h3 className="font-semibold text-gray-900 mb-4 text-sm">Peak Call Hours</h3>
+            <h3 className="font-semibold text-gray-900 mb-1 text-sm">Peak Call Hours</h3>
+            <p className="text-xs text-gray-400 mb-3 print:hidden">Click a bar to see calls in that hour</p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={callsByHour}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
                 <XAxis dataKey="label" tick={{ fontSize: 9 }} stroke="#9CA3AF" interval={2} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="#9CA3AF" />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Bar dataKey="count" fill={accentColor} radius={[4, 4, 0, 0]} name="Calls" />
+                <Bar
+                  dataKey="count"
+                  fill={accentColor}
+                  radius={[4, 4, 0, 0]}
+                  name="Calls"
+                  cursor="pointer"
+                  onClick={(data: any) => { if (data && data.count > 0) handleHourClick(data.hour, data.label) }}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           {/* Day of week distribution */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 print:shadow-none print:border-gray-300 print:break-inside-avoid">
-            <h3 className="font-semibold text-gray-900 mb-4 text-sm">Calls by Day of Week</h3>
+            <h3 className="font-semibold text-gray-900 mb-1 text-sm">Calls by Day of Week</h3>
+            <p className="text-xs text-gray-400 mb-3 print:hidden">Click a slice to see calls that day</p>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
@@ -232,7 +281,12 @@ export default function ReportsClient({
                   style={{ fontSize: 11 }}
                 >
                   {callsByDayOfWeek.map((entry: any, i: number) => (
-                    <Cell key={entry.name} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    <Cell
+                      key={entry.name}
+                      fill={PIE_COLORS[i % PIE_COLORS.length]}
+                      cursor="pointer"
+                      onClick={() => handleDayOfWeekClick(entry.name)}
+                    />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
@@ -242,13 +296,18 @@ export default function ReportsClient({
 
           {/* Top callers table */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 lg:col-span-2 print:shadow-none print:border-gray-300 print:break-inside-avoid">
-            <h3 className="font-semibold text-gray-900 mb-4 text-sm">Most Frequent Callers</h3>
+            <h3 className="font-semibold text-gray-900 mb-1 text-sm">Most Frequent Callers</h3>
+            <p className="text-xs text-gray-400 mb-3 print:hidden">Click a caller to see their calls</p>
             {topCallers.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-6">No repeat callers yet</p>
             ) : (
               <div className="space-y-2">
                 {topCallers.map((caller: any, i: number) => (
-                  <div key={caller.number} className="flex items-center gap-3">
+                  <div
+                    key={caller.number}
+                    onClick={() => handleCallerClick(caller.number)}
+                    className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-1.5 -m-1.5 transition print:hover:bg-transparent"
+                  >
                     <div
                       className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
                       style={{ background: accentColor }}
@@ -268,6 +327,55 @@ export default function ReportsClient({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Drill-down detail panel */}
+      {selection && (
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mt-5 print:hidden">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-semibold text-gray-900 text-sm">{selection.label}</h3>
+              <p className="text-xs text-gray-400 mt-0.5">{selection.calls.length} call{selection.calls.length !== 1 ? 's' : ''}</p>
+            </div>
+            <button onClick={() => setSelection(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition">
+              <X size={16} />
+            </button>
+          </div>
+          {selection.calls.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-6">No calls match this selection</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Time</th>
+                    <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Number</th>
+                    <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Duration</th>
+                    <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Direction</th>
+                    <th className="text-left py-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Summary</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selection.calls
+                    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                    .map((c: CDR) => (
+                      <tr key={c.id} className="border-b border-gray-50 last:border-0">
+                        <td className="py-2 px-2 text-xs text-gray-500 whitespace-nowrap">{new Date(c.created_at).toLocaleString()}</td>
+                        <td className="py-2 px-2 font-mono text-xs text-gray-700">{formatPhone(c.from_number)}</td>
+                        <td className="py-2 px-2 text-xs text-gray-500">{formatDuration(c.duration_sec)}</td>
+                        <td className="py-2 px-2">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${c.direction === 'inbound' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                            {c.direction}
+                          </span>
+                        </td>
+                        <td className="py-2 px-2 text-xs text-gray-600 max-w-xs truncate">{c.ai_summary || '—'}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
