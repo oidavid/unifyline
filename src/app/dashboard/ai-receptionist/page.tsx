@@ -112,7 +112,7 @@ export default function AIReceptionistPage() {
             <option value="">Default (account-wide)</option>
             {dids.map(d => (
               <option key={d.did_number} value={d.did_number}>
-                {d.label} â€” {fmtDid(d.did_number)} ({d.mode})
+                {d.label} - {fmtDid(d.did_number)} ({d.mode})
               </option>
             ))}
           </select>
