@@ -50,7 +50,7 @@ export default function GetStartedPage() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Get Started with UnifyLine</h1>
           <p className="text-gray-500">
-            Tell us about your business and we'll set up a personalized demo of your AI receptionist.
+            Tell us about your business and we'll set up a personalized walkthrough. This form joins the waitlist. Self-serve signup opens later.
           </p>
         </div>
 
@@ -166,7 +166,7 @@ export default function GetStartedPage() {
           </button>
 
           <p className="text-xs text-gray-400 text-center">
-            No commitment required. We'll reach out to schedule a personalized walkthrough.
+            We'll reach out to schedule a personalized walkthrough. Managed plans: monthly has a 3-month minimum, then month-to-month. Or prepay the year and skip setup.
           </p>
         </form>
       </div>
