@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'UnifyLine — AI Communications Platform for Global Business',
-  description: 'One platform for calls, AI receptionists, team softphones, and business intelligence — from Atlanta to Lagos to London. Enterprise communications at human pricing.',
+  title: 'UnifyLine — AI Receptionist for Small Business',
+  description: 'An AI receptionist that answers every call 24/7 and sends you every lead. Team softphone extensions, call summaries, and a daily Morning Briefing.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
