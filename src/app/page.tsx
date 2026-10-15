@@ -194,7 +194,7 @@ export default function LandingPage() {
             {[
               {
                 name:"Business", price:"$79", desc:"For teams of 2 to 20 people", highlight:true,
-                features:["1 virtual phone number","AI receptionist 24/7","Voicemail transcription","Call summaries & logs","Mobile app","Additional numbers available","Team softphone extensions","Follow-me calling","Lead capture with instant email alerts","Morning AI briefing","Priority support"],
+                features:["1 virtual phone number","AI receptionist 24/7","Voicemail transcription","Call summaries & logs","Mobile app","Additional numbers available","Team softphone extensions","Lead capture with instant email alerts","Morning AI briefing","Priority support"],
                 cta:"Join the waitlist", href:"/get-started",
               },
               {
@@ -226,7 +226,7 @@ export default function LandingPage() {
           <p className="text-center text-gray-400 text-sm mt-8">Join the waitlist (self-serve opens later).</p>
           <div className="max-w-3xl mx-auto mt-8 bg-white border border-gray-200 rounded-2xl p-6 text-center shadow-sm">
             <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Coming soon</p>
-            <p className="text-gray-600 text-sm leading-relaxed">Appointment booking · WhatsApp and text follow-ups to callers · CRM integration · Yoruba, French and Spanish answering · UK and Nigerian numbers.</p>
+            <p className="text-gray-600 text-sm leading-relaxed">Appointment booking · WhatsApp and text follow-ups to callers · CRM integration · Follow-me calling · Yoruba, French and Spanish answering · UK and Nigerian numbers.</p>
           </div>
         </div>
       </section>

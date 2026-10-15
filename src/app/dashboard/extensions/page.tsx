@@ -139,7 +139,7 @@ export default function ExtensionsPage() {
         <h3 className="font-semibold mb-2 text-sm md:text-base">How Extensions Work</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm opacity-90">
           <div><span className="font-medium text-white block">Internal calls</span>Dial an extension from your softphone to reach teammates directly.</div>
-          <div><span className="font-medium text-white block">AI routing</span>AI qualifies callers and routes to the right ring group automatically.</div>
+          <div><span className="font-medium text-white block">Ring groups</span>Automatic ring-group routing is coming soon. You can still label each extension with a group.</div>
           <div><span className="font-medium text-white block">Mobile app</span>Each extension rings on the team member's UnifyLine app.</div>
         </div>
       </div>
